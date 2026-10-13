@@ -1,0 +1,51 @@
+import { test, expect } from "@playwright/test";
+import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { createHash } from "node:crypto";
+
+test("真实 SQLite → 只读 API → 页面 → 原字节报告，以及断网恢复", async ({ page }) => {
+  test.skip(process.env.AWB_RUNS_E2E !== "1", "Run with npm run test:runs-live against disposable API 8031, never the user's store.");
+  expect(process.env.AWB_API_PORT).toBe("8031");
+  expect(process.env.PW_PORT).toBe("3011");
+  expect(process.env.AWB_STATE_DIR).toMatch(/awb-p004-e2e-[^/]+\/state$/);
+  expect(existsSync(process.env.AWB_STATE_DIR!)).toBe(false);
+  const writes: string[] = [];
+  page.on("request", request => { if (request.url().includes("/api/runs") && request.method() !== "GET") writes.push(request.method()); });
+  await page.goto("/workspace/tasks");
+  await expect(page.getByRole("heading", { name: "还没有运行记录" })).toBeVisible();
+  expect(existsSync(process.env.AWB_STATE_DIR!)).toBe(false);
+  // Seed metadata through the production RunStore API. These are synthetic test contracts,
+  // not claimed Docker executions; the separate root acceptance covers a real container run.
+  const seeded = JSON.parse(execFileSync("uv", ["run", "--frozen", "--project", "..", "python", "tests/fixtures/seed_runs.py"], { encoding: "utf8" })) as { runs: { run_id: string; status: string; report_sha256: string | null }[] };
+  await page.getByRole("button", { name: "刷新记录" }).click();
+  await expect(page.getByRole("button", { name: /查看运行 / })).toHaveCount(6);
+  await expect(page.getByRole("heading", { name: "选择一次运行" })).toBeVisible();
+  const success = seeded.runs.find(run => run.status === "succeeded")!;
+  await page.getByRole("button", { name: `查看运行 ${success.run_id}` }).click();
+  const detail = page.getByRole("region", { name: "运行详情" });
+  await expect(detail).toContainText("执行已结束");
+  await expect(detail).toContainText(success.run_id);
+  const nextDownload = page.waitForEvent("download");
+  await page.getByRole("button", { name: "下载运行报告" }).click();
+  const download = await nextDownload;
+  const chunks: Buffer[] = [];
+  for await (const chunk of (await download.createReadStream())!) chunks.push(Buffer.from(chunk));
+  const raw = Buffer.concat(chunks);
+  expect(createHash("sha256").update(raw).digest("hex")).toBe(success.report_sha256);
+  expect(JSON.parse(raw.toString()).record_id).toBe(success.run_id);
+  expect(download.suggestedFilename()).toBe(`run-${success.run_id}.json`);
+  await page.context().setOffline(true);
+  await page.getByRole("button", { name: "刷新记录" }).click();
+  await expect(page.getByRole("alert").first()).toContainText("未能读取");
+  await page.context().setOffline(false);
+  await page.getByRole("button", { name: "重试读取列表" }).click();
+  await expect(detail).toContainText(success.run_id);
+  const queued = seeded.runs.find(run => run.status === "queued")!;
+  await page.getByRole("button", { name: `查看运行 ${queued.run_id}` }).click();
+  await expect(page.getByRole("button", { name: "下载运行报告" })).toBeDisabled();
+  const unknown = seeded.runs.find(run => run.status === "outcome_unknown")!;
+  await page.getByRole("button", { name: `查看运行 ${unknown.run_id}` }).click();
+  await expect(detail).toContainText("结果未知");
+  await expect(detail).toContainText("执行器不可用");
+  expect(writes).toEqual([]);
+});

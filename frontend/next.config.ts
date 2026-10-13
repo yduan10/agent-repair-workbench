@@ -1,0 +1,37 @@
+import type { NextConfig } from "next";
+import path from "node:path";
+
+const apiPort = process.env.AWB_API_PORT || "8030";
+if (!/^\d{4,5}$/.test(apiPort) || Number(apiPort) < 1024 || Number(apiPort) > 65535) {
+  throw new Error("invalid_local_api_port");
+}
+const config: NextConfig = {
+  poweredByHeader: false,
+  turbopack: { root: path.resolve(process.cwd(), "..") },
+  async rewrites() {
+    return [
+      { source: "/api/agent-contracts", destination: `http://127.0.0.1:${apiPort}/api/agent-contracts` },
+      { source: "/api/runs", destination: `http://127.0.0.1:${apiPort}/api/runs` },
+      { source: "/api/runs/:id([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12})", destination: `http://127.0.0.1:${apiPort}/api/runs/:id` },
+      { source: "/api/runs/:id([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12})/report", destination: `http://127.0.0.1:${apiPort}/api/runs/:id/report` },
+      { source: "/api/check", destination: `http://127.0.0.1:${apiPort}/api/check` },
+      {
+        source: "/api/health",
+        destination: `http://127.0.0.1:${apiPort}/api/health`,
+      },
+    ];
+  },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+        ],
+      },
+    ];
+  },
+};
+export default config;

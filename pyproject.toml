@@ -1,0 +1,52 @@
+[build-system]
+requires = ["hatchling==1.32.4"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-workbench"
+version = "0.1.0"
+description = "Local tool-call contract checking and evidence reports"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "pydantic>=2.12,<3",
+    "jsonschema>=4.26,<5",
+    "fastapi>=0.115,<1",
+    "uvicorn>=0.34,<1",
+    "mcp==2.3.0",
+    "sqlalchemy>=2.0,<2.1",
+    "alembic>=1.16,<2",
+]
+
+[project.scripts]
+agent-workbench = "agent_workbench.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8,<10",
+    "hypothesis>=6,<7",
+    "ruff>=0.11,<1",
+    "mypy>=1.15,<2",
+    "types-jsonschema>=4.25,<5",
+    "httpx>=0.28,<1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_workbench"]
+
+[tool.pytest.ini_options]
+testpaths = ["src/agent_workbench/agents/diagnosis/tests", "src/agent_workbench/agents/repair/tests", "src/agent_workbench/agents/verification/tests", "tests", "experiments/public_mcp_case/test_prepare.py", "containers/p0_03/test_prepare.py"]
+addopts = "-q --import-mode=importlib"
+markers = ["docker: requires explicitly prepared local P0-03 Docker image", "public_case: requires explicitly prepared and reviewed historical source; no automatic downloads"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.mypy]
+exclude = ["src/agent_workbench/agents/[^/]+/tests/"]
+python_version = "3.12"
+strict = true
+files = ["src"]

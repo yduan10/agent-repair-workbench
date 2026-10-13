@@ -1,0 +1,16 @@
+{
+  "frontend/app/page.tsx": "23671dbdcb7e534279d96664cd30698281b02ed4dd7f51d16ef3c9155fb78a10",
+  "frontend/app/docs/page.tsx": "f12bedddff4919e858eec82368c44bbbc131956c5697bbd26bba24a9fbff5289",
+  "frontend/app/updates/page.tsx": "aa90e06b064d550a4678cd644c38dcd96f24b401ce8bdd3858d5f45333c58dac",
+  "frontend/app/workbench/page.tsx": "41cfd40799e5b75735063b13d609f7d446d048a26e7cea77c0a1d12ae48f41d3",
+  "frontend/app/globals.css": "20902f60c2bf8bb309cac88aabcc61f990638710b03a5ae5027da4c591b9f603",
+  "frontend/app/layout.tsx": "03a25ffe3682dc91e3901f2f9f89d154f81a8d23fe5a2950b38616056af3079d",
+  "frontend/components/project-resources.tsx": "ef87e4574a062971a5450b8bba5f8312b611538d97c2571f0c928957577bbaa3",
+  "frontend/components/workspace-footer.tsx": "5600b16898a40f606cf4eb8ba4cbf8976d5a386b928c658c528cd4895ee3a1e0",
+  "frontend/components/sidebar.tsx": "7c6cfc95dc2ce1a7002183f10f02ec29c82cb49284f33bd12c166980db7baa34",
+  "frontend/lib/project.ts": "bfaa9922658d78d55fa756e3dbc30d648815f6cc9cff23968b499897eb6f5120",
+  "frontend/lib/milestones.ts": "afed1fa07e8c08338ecf8feac21d595823eb75d02bb428f9da0b159051f32d8c",
+  "frontend/tests/guidance.spec.ts": "48202944acfc2e5831b7a640039f275912b54515ee51d1e2f0aec796c1c5bb08",
+  "frontend/tests/appearance.spec.ts": "e3ccafcf80221e96b12a17bac7bf9af2c07ce5a83ddc58fcff2d7486996382d5",
+  "frontend/tests/product.spec.ts": "bf08d573f45eb9d86cabe3ac7096a8ed0f82ee8ecac6309996e5ac424b2254ad"
+}

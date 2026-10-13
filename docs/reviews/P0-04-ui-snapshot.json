@@ -1,0 +1,22 @@
+{
+  "frontend/app/globals.css": "b930a420aea15d590be11578fe15d6e9ff54140efa4487258ffe12750b313175",
+  "frontend/app/page.tsx": "069c059622a73bc98c6780c46d8698b8ff612513ac7b54076483e21a0dab8c20",
+  "frontend/app/workspace/[section]/page.tsx": "78500f43811226a31d1e6fd5404e7a30ab949c16e9b6b699a376780c6cdd67fa",
+  "frontend/components/run-history.tsx": "dcfd14071631a10367e1a44bd4bdcb5e9c44a59fa1b08a6c3c892ae3af7e3555",
+  "frontend/lib/capabilities.ts": "c1928b90401fb93e49bbdb57bd8b51f6cfb269abd6727de0267641d673ffd23f",
+  "frontend/lib/milestones.ts": "8f402daea4c64c94d67501f786c6ae23c19e3e70c042547b02e36485df2624df",
+  "frontend/lib/modules.ts": "871872afc7c12bd56339f7b49e523e914f92da912f4e99950885783702ab6a5f",
+  "frontend/lib/runs.ts": "b97fc0e0e4273fb7a7511cf5e580407e5fdb4871527c0a90b7bbc967664b5ca3",
+  "frontend/next.config.ts": "e003fa519b516b9791fd3288efa481a751713800f3ad7722d0eaf379cf8529cc",
+  "frontend/package.json": "a2a452868294309e9ec84cfe10023784036ad625ab1748d82632bf19b0ba8671",
+  "frontend/package-lock.json": "4eb7bafa8f4f6060989c22414ad6c8ee11fbffe8522aaa9a41959bee01ef24c8",
+  "frontend/playwright.config.ts": "241ccd9a48f3744d9592eb6be3b1ca0d897d9d30da3cc0b31189c631aa72e775",
+  "frontend/tests/appearance.spec.ts": "f3acbcb8a2fdc8b9d21778b50fd13184595b4cd972f911cd9a322143abffbfa1",
+  "frontend/tests/product.spec.ts": "6038ad40aaa9b51a53ea661bd06a1714ed1a52b93ca5e6e546855d881c46314b",
+  "frontend/tests/progress.spec.ts": "cbe4cb464df3f3dc6e3215e452b6b5690dfa56af8c527bfd013a7a71bb13d22c",
+  "frontend/tests/runs.spec.ts": "167d5b2fdfeb7341c13dbfdbb6379f4b71f646fa8b46866aeec9ecf9f4a26c38",
+  "frontend/tests/runs-live.spec.ts": "ee2f5542f17d6cde37f4c07fc48bc3ed50cc51f330c993365d10b30f6babdefd",
+  "frontend/tests/run_live_tests.py": "1c95187282dd9fa9fff5648942afbfd12daa494e686e8cbf0bedae8b65b0bf23",
+  "frontend/tests/fixtures/seed_runs.py": "cda1d130b5397ca8e5ef0c161aaba0971b49e7a6ed811ff935be5e4e5299ff59",
+  ".github/workflows/checks.yml": "f34a091e18a7932cdd50257b80276c22307b06d1177af596dd5e246c6aef501f"
+}

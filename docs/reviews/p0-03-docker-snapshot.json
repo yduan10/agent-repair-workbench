@@ -1,0 +1,4 @@
+{
+  "src/agent_workbench/runner/docker.py": "53099eefc11a5b462cf5aa34fc4c0dced9a534b517e701120cdfc830e59ddbb2",
+  "tests/test_docker_control.py": "36cc26eed00547f98bb6447a7f15e4d5862f270125d792f3c9931f7215e57c75"
+}

@@ -1,0 +1,23 @@
+[project]
+name = "awb-public-mcp-case"
+version = "0.0.1"
+requires-python = ">=3.12,<3.13"
+# Runtime requirements from the pinned upstream pyproject. mcp and mcp_types
+# themselves load from the verified commit, never from a substituted wheel.
+dependencies = [
+  "anyio>=4.9",
+  "httpx2>=2.10.0",
+  "pydantic>=2.12.0",
+  "starlette>=0.27",
+  "python-multipart>=0.0.9",
+  "sse-starlette>=3.0.0",
+  "uvicorn>=0.31.1",
+  "jsonschema>=4.20.0",
+  "pyjwt[crypto]>=2.10.1",
+  "typing-extensions>=4.13.0",
+  "typing-inspection>=0.4.1",
+  "opentelemetry-api>=1.28.0",
+]
+
+[tool.uv]
+package = false

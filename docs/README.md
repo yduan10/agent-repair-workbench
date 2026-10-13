@@ -1,0 +1,46 @@
+# 开发文档索引
+
+- 版本：0.1；建立日期：2026-10-13。
+- 本次实现负责人：Codex；独立评审负责人：专职评审 Agent（在报告中记录实际身份）。
+- 生效依据：用户授权编写约束和迭代文档并开始第一项开发。市场需求仍是待验证假设，不以此授权推断已有客户或商业验证。
+
+| 文档 | 权威内容 | 更新触发 |
+|---|---|---|
+| [01 constraints](01-constraints.md) | 用户、范围、不变量、禁止事项 | 范围或风险边界变化 |
+| [02 architecture](02-architecture.md) | 组件边界、数据流、技术决策 | 接口/依赖/持久化变化 |
+| [03 roadmap](03-roadmap.md) | 唯一任务状态、优先级、依赖、验收 | 每项开始与结束 |
+| [04 quality gates](04-quality-gates.md) | 测试、评估、评审、发布门禁 | 验收或交付方式变化 |
+| [05 contract checker](05-contract-checker.md) | 首项可执行输入/输出规格 | 数据格式或检查语义变化 |
+| [06 dependencies](06-dependencies.md) | 依赖版本、用途、许可证与扫描范围 | 新增/升级依赖 |
+| [07 product UI](07-web-workbench.md) | 完整界面、真实能力与预览、浏览器测试 | 页面/交互/解锁范围变化 |
+| [08 MCP integration](08-mcp-integration.md) | P0-02 字段映射、受控执行、公开案例和测试计划 | SDK/协议/执行边界变化 |
+| [09 Agent modules](09-agent-modules.md) | 产品角色分目录、依赖边界、新增步骤与测试发现 | 角色增加、契约或维护流程变化 |
+| [10 UI appearance](10-ui-02-appearance.md) | 三态主题、动效、历史口径与浏览器验收 | 配色、交互、能力状态变更 |
+| [11 controlled execution](11-controlled-execution.md) | P0-03 容器策略、字节限制、取消和故障矩阵 | 执行边界与运行测试变化 |
+| [12 execution UI](12-p0-03-ui-status.md) | P0-03 页面能力与历史同步 | CLI/Web状态变化 |
+| [13 module progress](13-ui-progress.md) | UI-03侧栏与页面实际能力同步规则 | 每次能力解锁/状态变化 |
+| [14 run store](14-run-store.md) | P0-04 状态、租约、报告事务、恢复与只读网页 | 执行持久化及恢复规则变化 |
+| [15 run history UI](15-run-history-ui.md) | P0-04 真实记录页、只读边界、前端验收 | 运行记录UI及API契约变化 |
+| [16 navigation hierarchy](16-navigation-hierarchy.md) | UI-04 主导航与产品信息入口分层 | 导航位置、页脚样式及离开保护变化 |
+| [17 agents, tools and testing](17-agent-tools-testing-plan.md) | DOC-03 产品闭环、角色、受控工具、自研边界、A/R测试矩阵 | P0-05/06契约、权限或验收变化 |
+| [18 P0-05a contracts](18-p0-05a-contracts.md) | 角色/工具请求、状态和安全摘要冻结规格 | 契约或权限变化需增量评审 |
+| [19 P0-05a delivery](19-p0-05a-delivery.md) | 本批实现、验收、模型接口探针与边界 | 验收和接续批次变化 |
+| [20 UI guidance and public source](20-ui-05-public-source.md) | UI-05 引导、文档、主题修复及公开源码范围 | 本批验收和发布记录变化 |
+| reviews/ | 文档及代码评审证据 | 每次评审 |
+
+## 冲突、版本和决策
+
+用户最新明确指令 > 产品约束 > 当前任务规格 > 架构 > 示例。台账决定实现状态；评审报告决定该快照的质量结论。发现冲突需同步修订并标原因，不让不同文档长期给出相反规则。
+
+新增范围先在架构记录 ADR（背景、决策、替代方案、代价、重新评估条件），再给台账任务及验收。数据协议破坏性修改增加 `schema_version`；旧报告不可静默重新解释。文档状态和产品版本独立，0.1 文档不意味着已可发布。
+
+## 变更记录
+
+| 日期 | 变更 | 原因 | 状态 |
+|---|---|---|---|
+| 2026-10-13 | 建立局部工具调用可靠性方向及 P0-01 规格 | 限制个人开发范围、先有独立验收依据 | 已完成独立评审与修订，见 reviews/DOC-01.md |
+| 2026-10-13 | 明确数值保真边界、精确 multipleOf、CLI 参数不回显 | 独立代码评审发现及文档增量复审 | 文档增量复审通过 |
+| 2026-10-13 | UI-01产品界面先行及P0-02详细测试规格 | 用户要求先完成产品UI，后台逐项解锁 | 独立增量复审通过，见 reviews/UI-01-P0-02-design-review.md |
+| 2026-10-13 | DOC-03统一Agent/tools职责、自研边界和26项后续验收用例 | 用户要求开发前明确闭环及测试；同步架构当前状态 | 两项设计问题修复复审，见 [DOC-03](reviews/DOC-03-review.md)；不计模型实现完成 |
+
+公开版说明：历史评审中的本机绝对路径已脱敏为 `<project-root>` / `<review-workspaces>`；快照哈希记录的是当时文件，文档脱敏及后续迭代会改变文档哈希。历史代码快照和验收事实不据此重写。

@@ -1,0 +1,8 @@
+{
+  "containers/p0_03/Dockerfile": "b5b777cd929ac0d2c56f6ae27e58b904dbfa92785d5efec4e41aba5ad701cbec",
+  "containers/p0_03/README.md": "a6736fe58c8651ce6af3a8cced24c7e0bfccd1acf87ab1e3097afdcb655a1ca8",
+  "containers/p0_03/prepare.py": "37c8ce4234a151ada4dc1d2ec045ed1b641207e90377b5737863db6d57b1459b",
+  "containers/p0_03/server.py": "33b826e594ee7573cb427d0724be37107b86a8b4b4636aa3abbe22aed193db59",
+  "containers/p0_03/test_prepare.py": "f675b5818303a3ab852a57f20d16bf0f79804c321aeb852b59b7814b52700a07",
+  "tests/test_fixture_fault_regressions.py": "f7bb83bc2357aacb533925b67ea38a1c573d10ab9ca8d0b747d1dd46195a9a96"
+}

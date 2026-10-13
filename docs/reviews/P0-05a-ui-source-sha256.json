@@ -1,0 +1,13 @@
+{
+  "frontend/components/agent-contracts.tsx": "32aaf82c626ffe7114902f570c852cc2c1c5583a32e57bbb66babd4f86616ab8",
+  "frontend/lib/agent-contracts.ts": "aecb83847107b3c63b6de962b04cc21fd435bdbbc8b365e4923901c1a053a235",
+  "frontend/components/module-preview.tsx": "12f11d38bd0b5ae79eefa30ac2686a5f112f4711e149ee53f45fe2132177c538",
+  "frontend/app/globals.css": "bfe95e4a3b6ee7022ddb242237f421e20b157eb38f150a03b6d982b40a0f1100",
+  "frontend/next.config.ts": "87b52d2d1e51858bc0a808b91d1bc87424d0ed15e7fcd7a448ba29866902db44",
+  "frontend/lib/capabilities.ts": "3b8bb79d461e2941edf011cd42ffaa5bf095e5f1a35171fd0202c910ad901bd1",
+  "frontend/lib/milestones.ts": "8d8ee12db6e23ac5a7520e8e4caacc8193c2caa4d0ca29a306ce9b384fad11f6",
+  "frontend/tests/agent-contracts.spec.ts": "a26215351749e7fbf1304e41f93b3c62a65805c32383e8bc832976688e4b22ec",
+  "frontend/tests/appearance.spec.ts": "ec8444804e308f020049af482f95b37047551e7e95132b3f10e30810b42469eb",
+  "frontend/tests/progress.spec.ts": "33fad543ac6005466b48b3b17a9b60ca08db229de9637029046f78869ae7f3d1",
+  "docs/18-p0-05a-contracts.md": "a13a2064e34493ae6bac53bc1337882eaef3e782d28b85b937b538a05226bd6f"
+}

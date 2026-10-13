@@ -1,0 +1,19 @@
+{
+  "review": "UI-02-independent-review",
+  "date": "2026-10-13",
+  "state": "frozen-reviewed-UI-02-final-text",
+  "files": {
+    "frontend/components/theme-control.tsx": "d890d1dff247ce702813d9049212f4ce69e67be4971fef9d9fb0d6e7fac0e48f",
+    "frontend/components/sidebar.tsx": "33ff280df1d061ceab535615a664f150546842e325e228e5917e3bf2d5704fec",
+    "frontend/components/module-preview.tsx": "a3d47ffc2bae9b63fb21035fe40998ddd91f9ec6eae8ebac1959da3b7a861bec",
+    "frontend/app/layout.tsx": "de85c617319ac3f7d5e9f9cc152c583135d21def316f97bb972c4b5993d71660",
+    "frontend/app/globals.css": "ff3744045a04aed1e80b439a8cd1cf7c27a7bde6611a430373f411447f1de5de",
+    "frontend/app/page.tsx": "6a89fe76e882053afa4504435e7f6a8b234b5a47a9cc25a905a1dd7306d9c577",
+    "frontend/app/updates/page.tsx": "4be922f188bb1c4faaa114f951a5ddece6a79f88a03a96837a0024bc4412b088",
+    "frontend/lib/milestones.ts": "5c2aab9f23a778dbcfde7bdc8d6560b07453e73ed7322137bc5e135c9b9fa43f",
+    "frontend/lib/modules.ts": "082055cf5cb26ab97b9a5d7baef34e4e1e5fa697aecd7495b998f0337ab175e7",
+    "frontend/tests/appearance.spec.ts": "5f7e102dbfa47178d08aa304638f78fd652b84b59ce3650f11cee41c5a570069",
+    "frontend/playwright.config.ts": "2a05c445469060f4e2075bc7bb2004a9b187cbd15e97b049d3d2fb12a3631ae5",
+    "docs/10-ui-02-appearance.md": "ec3bec93ccb4786a392ee617a969f71f120b00aeb88be08900bbd40122368b0f"
+  }
+}

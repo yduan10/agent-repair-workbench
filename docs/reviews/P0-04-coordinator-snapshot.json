@@ -1,0 +1,23 @@
+{
+  "README.md": "6256efe8dbc57f7e583e762f7960f0db0a7f3d4aeec9d553b80cec2db7a6bae8",
+  "docs/01-constraints.md": "df3c1f3522bd4ac46ee26bd7966382a923bea4c7f7d91f83bd7a551721718f19",
+  "docs/02-architecture.md": "63869b9d1e38bf93bd38c73358f255d102926c5c57ea7b8764bc3b8e4d8929b9",
+  "docs/03-roadmap.md": "ac02a432e84fdb7353d007d7c1248c95dea504164433849c8b22025f9ae29cb2",
+  "docs/04-quality-gates.md": "f6c7b91abf54c400d37faa86d8514803f2d314f517e36b4391959ff638daad87",
+  "docs/06-dependencies.md": "b6e2aeed54d2a5e61deec308b5aa6b903cd8e63e1daa3ded9f4e507e2e093811",
+  "docs/14-run-store.md": "c60da6b175ac6eecc8368e910d58d8355e38ae6e32601361d0102da93dfd8fd8",
+  "review/tests/test_p004_independent.py": "b347dd59856892ab9ab179e0aada9df5c321fa0421ae6264fe65c6da99adb734",
+  "src/agent_workbench/api.py": "5806c5fd084b60287b572589f4d3384021ee25dd52a45bbc222667bd7cc07abe",
+  "src/agent_workbench/cli.py": "ba9b4fb747c13c0692a86bb8ef7048f272f3ebee435654f6d7feaab19f514d4c",
+  "src/agent_workbench/run_store/api.py": "795b04b1f89d1cfc2bd38abd41c01d712eb749ee2dfb0a4ddbda83ceca2df5ab",
+  "src/agent_workbench/run_store/cli.py": "5ad3aff576087cb94b4ef11ba57eab2bcc126c102d93bc3c9ae0f5c6f1c2e2eb",
+  "src/agent_workbench/run_store/execution.py": "136aef107a12d0a853c594422d3ca0d84551fe12ab4c633f6d709e49c842ff1a",
+  "src/agent_workbench/run_store/location.py": "2350ebccf2187aa582e4094e4bf8d5ac4adf58dd50cc483e925ecbe32cfa77e9",
+  "src/agent_workbench/runner/cli.py": "7009ea055954ca8f9ca5ed0d007c78a11aaa2ad4e20ba6baba4adccbc55337e7",
+  "src/agent_workbench/runner/models.py": "70bbe3683111cc95b11349629cdf0fa3589637520a1d1eec93fdc42066021060",
+  "src/agent_workbench/runner/service.py": "623be2697ff29dcd9a7a9da7ca49b80e53972b9751edb67ab68bec03b5146019",
+  "tests/test_run_independent.py": "c69377f5ed36c05dda930ce73de1c35113c79e24a9da764c1943dc8ab532f24c",
+  "tests/test_run_persistence.py": "ce37d5fcf8149e11fd5d83bee154510b5394574ada2c8ec90c510e0b6ed20f38",
+  "tests/test_run_persistence_docker.py": "19b7b9592276641083482ba534f2a75a3b2486bdf6e1b8f86e662a4aafae5d64",
+  "tests/test_sandbox_docker.py": "f2058390d9acc785e039f0068ccfc695e534f3e5231013cbf0a34b2009a0ac0e"
+}

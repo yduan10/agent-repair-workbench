@@ -1,0 +1,14 @@
+{
+  "docs/03-roadmap.md": "42b1747db837c331d765ce16e40b61684b3c72756e2da55ba482e1aa5a408277",
+  "docs/16-navigation-hierarchy.md": "c43dec04ea6be6bfb72c2a830a920c31c2827568a7d3cc02e9f8014cc583446b",
+  "frontend/app/globals.css": "22ec8c27bfd3c39cc2d4155063859563740dbe479a09597aa9cf226bf75111b5",
+  "frontend/app/workbench/page.tsx": "88d2d7743158e3b13eeceb9a37145fc3e0a6f351cb085a0322ea4c29af790a9f",
+  "frontend/components/module-preview.tsx": "80fe0e2afe61fd9fe6ca56da9389bf11098b563b3d2144b6ae359b419da18053",
+  "frontend/components/run-history.tsx": "3253cb4a65fd0395fb1134b99edba8fc43b0df5b2859d93804a0ae137faf1cae",
+  "frontend/components/sidebar.tsx": "2f1514194a7826d51d07aca7613025f443f4508fa514852e353fb07abdffdefd",
+  "frontend/components/workspace-footer.tsx": "d571c2bed135bd1ace37fe9341c3c5f24aa14f26b187b709c0b19c4e8e906b80",
+  "frontend/lib/milestones.ts": "c7230b3f2fa17d1d88b9d50647146391937218b491e537f43dc48006402f9da5",
+  "frontend/lib/modules.ts": "41329322e584c5072c0b7b606754782f2148df37aa54edea3d561cc4a0d5dc6e",
+  "frontend/tests/appearance.spec.ts": "702dad7f50eddc2bdc2631be3c58a3160bbd0e3b5a0f6d701f93cd1ebec8df08",
+  "frontend/tests/product.spec.ts": "0562fe22eccd9b62dfec8bd9b345dadfd1dca4f5a511f83d1f549b77682e5e96"
+}
