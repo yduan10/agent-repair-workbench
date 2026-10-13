@@ -1,0 +1,10 @@
+{
+  "src/agent_workbench/web_runs/catalog.py": "05b817920a40aaa8bcd55689ea2b4bb020d4aa622fd7bd497d2dfc70c594d27a",
+  "src/agent_workbench/web_runs/service.py": "234aa5447ebc3f953a53846aedbe56e3fbc725a68feba80a219f342150d270a8",
+  "src/agent_workbench/web_runs/api.py": "0f63f64eae42cbcf4661226949330e87864dd5a609ad83f6b953c40115b47e80",
+  "src/agent_workbench/api.py": "69f05fd10eac34c6f7d9e255d6057541a0dba1983095bce54d6ced9b7e0fdff1",
+  "src/agent_workbench/runner/service.py": "7fb5a348d70f6876495ac3fa072ca8d083f211d84ada28056864ea490b06d3e1",
+  "tests/test_web_reproductions.py": "44679404cda6a01d44ee121b0b96e59bef034ecca64426eb114efecffc96f7e4",
+  "tests/test_web_reproductions_docker.py": "d3f3ba1a1b6a2bd77654d649ff4417975981dd82a5b3620d334aa7a270a99ee9",
+  "tests/test_web_reproductions_reviewer.py": "d840abbe8bb7d1735e460f0e16dc3e7b6d31215cc800f97984a98d10ad06ffc7"
+}

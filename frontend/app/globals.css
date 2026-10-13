@@ -3184,3 +3184,76 @@ summary {
   .markdown-document h2 { font-size: 22px; }
   .markdown-document pre { padding: 18px; }
 }
+
+/* P1-01a: explicit reproduction actions and verified results. */
+.reproduction-content .intro { margin-bottom: 28px; }
+.reproduction-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 28px 30px; margin-bottom: 28px; }
+.reproduction-heading { display: flex; align-items: start; justify-content: space-between; gap: 18px; }
+.reproduction-heading h2 { font-size: 23px; letter-spacing: -.03em; margin: 0 0 9px; }
+.reproduction-heading p, .scenario-explanation p, .reproduction-cli p { margin: 8px 0; color: var(--muted); line-height: 1.85; font-size: 13px; }
+.reproduction-scope { color: var(--muted); font-size: 12px; white-space: nowrap; padding-top: 6px; }
+.scenario-picker { border: 0; padding: 0; margin: 24px 0 18px; display: flex; flex-wrap: wrap; gap: 8px; }
+.scenario-picker label { display: flex; align-items: center; gap: 8px; padding: 12px 18px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; transition: background .16s, border-color .16s; font-size: 14px; }
+.scenario-picker input { accent-color: var(--blue); margin: 0; }
+.scenario-picker label.chosen { background: var(--surface-soft); border-color: var(--blue); }
+.scenario-picker label:focus-within { outline: 2px solid var(--blue); outline-offset: 3px; }
+.scenario-picker:disabled label { cursor: default; }
+.scenario-explanation { min-height: 68px; max-width: 78ch; }
+.scenario-explanation strong { color: var(--ink); font-weight: 600; }
+.reproduction-boundary { font-size: 12px; color: var(--muted); line-height: 1.8; padding: 14px 0; margin: 0; }
+.reproduction-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.reproduction-start { background: var(--blue); color: #fff; border: 1px solid var(--blue); border-radius: 8px; padding: 12px 22px; display: inline-flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.reproduction-start:disabled { opacity: .6; cursor: not-allowed; }
+.reproduction-start:focus-visible, .reproduction-panel button:focus-visible, .reproduction-panel summary:focus-visible, .reproduction-cli pre:focus-visible, .reproduction-progress summary:focus-visible, .run-filters input:focus-visible, .run-filters select:focus-visible { outline: 2px solid var(--blue); outline-offset: 4px; }
+.reproduction-error, .reproduction-busy, .reproduction-uncertain { background: var(--surface-soft); border-left: 3px solid var(--blue); padding: 12px 16px; border-radius: 0 6px 6px 0; font-size: 13px; line-height: 1.85; margin: 14px 0; }
+.reproduction-error a, .reproduction-cli a { color: var(--blue); margin-left: 6px; text-decoration: underline; }
+.reproduction-notice, .reproduction-uncertain p { font-size: 13px; line-height: 1.85; margin: 12px 0; }
+.reproduction-cli { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 18px; font-size: 13px; }
+.reproduction-cli summary, .reproduction-request summary, .reproduction-progress > summary { cursor: pointer; color: var(--blue); font-size: 13px; }
+.reproduction-cli pre { max-width: 100%; overflow-x: auto; padding: 18px; border-radius: 8px; background: var(--code); color: #e6edf8; font-size: 12px; line-height: 1.8; }
+.reproduction-cli pre code { white-space: pre; }
+.reproduction-request { font-size: 12px; overflow-wrap: anywhere; }
+.reproduction-request code { display: block; margin-top: 12px; }
+.reproduction-progress { margin: 26px 0; }
+.reproduction-progress .module-progress { margin-top: 18px; }
+.reproduction-content .run-columns { grid-template-columns: minmax(230px, .75fr) minmax(0, 1.6fr); grid-template-areas: "history detail"; }
+.reproduction-content .run-list-panel { grid-area: history; padding: 22px 16px; }
+.reproduction-content .run-detail { grid-area: detail; }
+.run-list-panel > h3 { font-size: 15px; margin: 0 0 5px; }
+.run-filters { display: grid; gap: 10px; margin: 16px 0; }
+.run-filters label > span { font-size: 12px; display: flex; align-items: center; gap: 7px; color: var(--muted); margin-bottom: 6px; }
+.run-filters input, .run-filters select { width: 100%; min-width: 0; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; font-size: 13px; }
+.run-detail-heading p { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
+.run-detail-heading h2 { margin: 0; }
+.run-report-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-bottom: 16px; }
+.run-report-heading h3 { margin: 0; font-size: 17px; }
+.verified-label { color: var(--muted); font-size: 11px; }
+.report-summary { display: flex; flex-wrap: wrap; gap: 20px 28px; margin: 16px 0; padding: 18px 0; border-block: 1px solid var(--line); }
+.report-summary dt { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+.report-summary dd { margin: 0; font-size: 16px; font-weight: 600; }
+.report-checks { font-size: 13px; }
+.report-findings { list-style: none; padding: 0; margin: 16px 0; font-size: 12px; }
+.report-findings li { padding: 12px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+.report-findings li > code { display: block; font-size: 13px; font-weight: 600; }
+.report-findings span { display: block; margin-top: 6px; color: var(--muted); }
+.report-warning { color: var(--blue); }
+.execution-events { margin: 24px 0; }
+.execution-events h3 { font-size: 15px; }
+.reproduction-content .run-digests { margin-top: 24px; }
+@media (max-width: 900px) {
+  .reproduction-content .run-columns { grid-template-columns: minmax(0, 1fr); grid-template-areas: "detail" "history"; }
+  .reproduction-content .run-list-panel { border-right: 0; border-top: 1px solid var(--line); }
+  .run-filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+@media (max-width: 520px) {
+  .reproduction-panel { padding: 22px 18px; }
+  .reproduction-heading { flex-direction: column; gap: 0; }
+  .reproduction-scope { display: none; }
+  .scenario-picker { display: grid; grid-template-columns: 1fr 1fr; }
+  .scenario-picker label { padding: 11px 8px; font-size: 13px; }
+  .reproduction-actions { align-items: stretch; }
+  .reproduction-content .run-toolbar { align-items: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) { .scenario-picker label { transition: none; } }
+
+html[data-theme="dark"] .reproduction-start { color: #142442; }

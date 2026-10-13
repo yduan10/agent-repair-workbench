@@ -1,6 +1,7 @@
 """Loopback-only HTTP adapter for the bounded offline checker."""
 
 import asyncio
+import os
 import re
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
@@ -12,8 +13,20 @@ from fastapi.responses import JSONResponse
 from agent_workbench import __version__
 from agent_workbench.checker import MAX_BYTES
 from agent_workbench.cli import run_check
+from agent_workbench.run_store.location import state_directory
+from agent_workbench.web_runs.service import ReproductionService
 
-ORIGINS = {"http://127.0.0.1:3010", "http://localhost:3010"}
+
+def local_origins() -> frozenset[str]:
+    port = os.environ.get("AWB_FRONTEND_PORT", "3010")
+    if (
+        not port.isascii()
+        or not port.isdigit()
+        or not 4 <= len(port) <= 5
+        or not 1024 <= int(port) <= 65535
+    ):
+        raise ValueError("invalid_frontend_port")
+    return frozenset({f"http://127.0.0.1:{int(port)}", f"http://localhost:{int(port)}"})
 
 
 def error(code: str, status: int) -> JSONResponse:
@@ -21,17 +34,23 @@ def error(code: str, status: int) -> JSONResponse:
 
 
 def create_app() -> FastAPI:
+    origins = local_origins()
+
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.gate = asyncio.Semaphore(1)
         app.state.workers = set()
+        app.state.reproductions = ReproductionService(state_directory())
         try:
             yield
         finally:
+            await app.state.reproductions.close()
             if app.state.workers:
                 await asyncio.gather(*app.state.workers, return_exceptions=True)
 
     app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+
+    app.state.local_origins = origins
 
     @app.middleware("http")
     async def browser_boundary(
@@ -42,7 +61,7 @@ def create_app() -> FastAPI:
             r"(?:127\.0\.0\.1|localhost)(?::[0-9]{1,5})?", request.headers.get("host", "")
         ):
             response: Response = error("host_forbidden", 400)
-        elif (origin is not None and origin not in ORIGINS) or request.headers.get(
+        elif (origin is not None and origin not in origins) or request.headers.get(
             "sec-fetch-site"
         ) == "cross-site":
             response = error("origin_forbidden", 403)
@@ -101,7 +120,9 @@ def create_app() -> FastAPI:
 
     from agent_workbench.orchestration.catalog import router as contracts_router
     from agent_workbench.run_store.api import router as runs_router
+    from agent_workbench.web_runs.api import router as reproductions_router
 
+    app.include_router(reproductions_router)
     app.include_router(contracts_router)
     app.include_router(runs_router)
     return app

@@ -24,7 +24,7 @@ export default function DocsPage() {
           <li><strong>点击「运行检查」</strong><p>示例的 count 声明为整数，记录却是字符串。预期看到「发现不符合项」及字段路径，而不是模型生成的解释。</p></li>
           <li><strong>对照正常与缺失结果</strong><p>正常调用应通过；缺失结果应报告 result_missing。下载报告核对范围与证据指纹。</p></li>
         </ol>
-        <p className="docs-note">任务总览显示 CLI 写入的本机记录，首次启动可能为空。工具接入页已提供真实接口目录；网页执行和模型修复尚未接通。</p>
+        <p className="docs-note">任务总览可运行四种审核过的合成场景，查询真实状态、请求停止并核验报告；需先准备本机数据库、Docker 与固定镜像。已有 CLI 记录同样可查，首次启动可能为空。工具接入页提供接口目录，自定义执行和模型修复尚未接通。</p>
       </section>
       <section id="agent-testing" className="docs-section">
         <h2>Agent 怎么测，当前测到了哪一步？</h2>

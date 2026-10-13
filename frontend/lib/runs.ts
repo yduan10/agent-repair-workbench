@@ -6,7 +6,7 @@ const count = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
 const timestamp = z.number().finite().nonnegative().max(253402300799);
 const scenario = z.enum(["pass", "tool_error", "timeout", "response_lost", "duplicate_result", "crash_before_call", "crash_during_call", "crash_before_result", "stdout_flood", "stderr_flood", "stdout_total_flood", "pid_limit", "spawn_child", "oom", "cpu_spin", "policy_probe"]);
 const state = z.enum(["queued", "running", "succeeded", "failed", "cancelled", "outcome_unknown"]);
-const runSchema = z.strictObject({
+export const runSchema = z.strictObject({
   run_id: uuid, attempt_id: uuid.nullable(), status: state, version: count.min(1),
   created_at: timestamp, updated_at: timestamp, lease_until: timestamp.nullable(),
   profile: z.literal("isolated-fixture"), scenario,
@@ -40,7 +40,7 @@ export const executorLabels = { absent: "容器不存在", running: "容器运�
 const finding = z.strictObject({ code: z.string().max(128), phase: z.string().max(64), instance_path: z.string().max(8192), schema_path: z.string().max(8192) });
 const checkStatus = z.enum(["passed", "failed", "not_checked", "skipped"]);
 // Preserve metadata-only artifacts. Unknown fields are rejected, never silently downloaded.
-const sandboxReportSchema = z.strictObject({
+export const sandboxReportSchema = z.strictObject({
   sandbox_report_version: z.literal(1), run_id: uuid, record_id: uuid,
   mcp: z.strictObject({
     mcp_report_version: z.literal(1), invocation_id: uuid,
@@ -70,14 +70,16 @@ const sandboxReportSchema = z.strictObject({
   }),
 });
 
-export class RunApiError extends Error {}
+export class RunApiError extends Error {
+  constructor(message: string, readonly status?: number) { super(message); }
+}
 const LIMIT = 1024 * 1024;
 
-async function readJSON(url: string, signal: AbortSignal): Promise<{ value: unknown; bytes: Uint8Array<ArrayBuffer> }> {
-  const response = await fetch(url, { method: "GET", cache: "no-store", signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]) });
+export async function readJSON(url: string, signal: AbortSignal, init: { method: "POST"; body: string } | undefined = undefined): Promise<{ value: unknown; bytes: Uint8Array<ArrayBuffer> }> {
+  const response = await fetch(url, { method: init?.method ?? "GET", ...(init ? { body: init.body, headers: { "Content-Type": "application/json" } } : {}), cache: "no-store", signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]) });
   if (!response.ok) {
     await response.body?.cancel().catch(() => {});
-    throw new RunApiError(response.status === 404 ? "记录或报告已不存在，请刷新列表。" : "本地记录服务暂时不可用，请稍后重试。");
+    throw new RunApiError(response.status === 404 ? "记录或报告已不存在，请刷新列表。" : "本地记录服务暂时不可用，请稍后重试。", response.status);
   }
   if (response.headers.get("content-type")?.split(";")[0].trim() !== "application/json" || !response.body) {
     await response.body?.cancel().catch(() => {});
@@ -114,14 +116,18 @@ export async function loadRun(id: string, signal: AbortSignal) {
   if (!parsed.success || parsed.data.run.run_id !== id) throw new RunApiError("运行详情不符合数据约定，未展示。");
   return parsed.data;
 }
-export async function loadReport(run: RunView, signal: AbortSignal) {
+export type SandboxReport = z.infer<typeof sandboxReportSchema>;
+export async function loadVerifiedReport(run: RunView, signal: AbortSignal) {
   const { value, bytes } = await readJSON(`/api/runs/${uuid.parse(run.run_id)}/report`, signal);
   const parsed = sandboxReportSchema.safeParse(value);
   const digest = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), byte => byte.toString(16).padStart(2, "0")).join("");
   if (!parsed.success || parsed.data.record_id !== run.run_id || parsed.data.run_id !== run.attempt_id || digest !== run.report_sha256) {
     throw new RunApiError("报告结构、关联或摘要校验未通过，未下载。请刷新详情后重试。");
   }
-  return bytes;
+  return { report: parsed.data, bytes };
+}
+export async function loadReport(run: RunView, signal: AbortSignal) {
+  return (await loadVerifiedReport(run, signal)).bytes;
 }
 export function runError(error: unknown) {
   return error instanceof RunApiError ? error.message : "未能读取本地运行记录，请检查服务与网络后重试。";

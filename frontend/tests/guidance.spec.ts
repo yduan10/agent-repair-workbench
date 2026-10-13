@@ -6,7 +6,7 @@ test("首次访问能找到真实功能、文档和源码", async ({ page }) => 
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("定位工具调用失败");
   const start = page.getByRole("region", { name: "按你要做的事，直接进入。" });
-  await start.getByRole("link", { name: /查看本机运行记录/ }).click();
+  await start.getByRole("link", { name: /运行一次工具复现/ }).click();
   await expect(page).toHaveURL(/\/workspace\/tasks$/);
   const footer = page.getByRole("region", { name: "产品信息" });
   await footer.getByRole("link", { name: "项目文档", exact: true }).click();

@@ -7,13 +7,13 @@ export const capabilities = {
     label: "网页可用", tone: "available",
     completed: "证据导入、参数与结果契约检查、问题定位和报告下载已接通本地 API。",
     access: "直接在网页打开调用检查，导入自己的调用证据。",
-    next: "任务总览已接通运行记录；网页发起执行与审批按 P1-01 接入。", milestone: "P0-01",
+    next: "任务总览已接入受控复现；模型协作与审批仍在后续阶段。", milestone: "P0-01",
   },
   tasks: {
-    label: "记录可用", tone: "available",
-    completed: "P0-04 已完成运行状态、原子报告保存、租约领取和恢复对账，并通过独立评审。",
-    access: "在本页选择 CLI 运行记录，查看状态事件并下载通过摘要校验的报告。",
-    next: "P0-05 接入受约束的角色协作；P1-01 开放网页发起、取消与审批。", milestone: "P0-04",
+    label: "受控复现", tone: "available",
+    completed: "运行记录与报告存储已完成；P1-01a 完成四种固定场景的网页发起、查询与停止请求，已通过真实容器验收与独立评审。",
+    access: "在本机执行审核过的合成场景，查看真实状态及校验报告；不支持任意工具或代码。",
+    next: "P0-05b 接入模型与受约束的角色协作；审批仍待后续实现。", milestone: "P1-01a",
   },
   diagnosis: {
     label: "开发中", tone: "planned",
@@ -43,7 +43,7 @@ export const capabilities = {
     label: "CLI 可用", tone: "available",
     completed: "P0-02 · MCP CLI 已验证。P0-03 · 受控 Docker CLI 已验证。18 项真实容器验收及独立复审通过，覆盖故障注入、取消回收与宿主进程终止。",
     access: "可查看、下载下方协作接口目录，或在项目目录使用固定 CLI 配置。网页接入尚未开放；当前表单不会执行命令。",
-    next: "任务总览已能查看运行记录；网页发起工具执行仍按 P1-01 接入。", milestone: "P0-03",
+    next: "任务总览接入四种固定合成场景；此页的自定义工具接入仍未开放。", milestone: "P0-03",
   },
 } as const;
 export type CapabilityKey = keyof typeof capabilities;

@@ -32,6 +32,7 @@ const events = [
   { event_id: "30000000-0000-4000-8000-000000000003", version: 3, kind: "finished", created_at: 1791853205 },
 ];
 async function mockRecords(page: Page, records = [run(), run(B, "outcome_unknown")]) {
+  await page.route("**/api/reproductions/catalog", route => route.fulfill({ status: 503, json: { error: "not_ready" } }));
   const writes: string[] = [];
   page.on("request", request => { if (request.url().includes("/api/runs") && request.method() !== "GET") writes.push(request.method()); });
   await page.route("**/api/runs**", async route => {
@@ -44,7 +45,7 @@ async function mockRecords(page: Page, records = [run(), run(B, "outcome_unknown
   return writes;
 }
 
-test("运行空态只说明 CLI 入口，不填入合成运行", async ({ page }) => {
+test("运行空态提供真实入口，不填入合成运行", async ({ page }) => {
   const writes = await mockRecords(page, []);
   await page.goto("/workspace/tasks");
   await expect(page.getByRole("heading", { name: "还没有运行记录" })).toBeVisible();
@@ -168,7 +169,7 @@ for (const width of [1440, 390]) {
     await page.emulateMedia({ colorScheme: width === 390 ? "dark" : "light", reducedMotion: "reduce" });
     await page.goto("/workspace/tasks");
     await page.getByRole("button", { name: `查看运行 ${A}` }).click();
-    await page.getByText("查看输入与报告摘要", { exact: true }).click();
+    await page.getByText("技术详情：ID、版本与摘要", { exact: true }).click();
     await expect(page.getByRole("region", { name: "运行详情" })).toContainText("执行已结束");
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
     const audit = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();

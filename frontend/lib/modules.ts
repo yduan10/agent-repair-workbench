@@ -1,9 +1,9 @@
 export const modules = {
   tasks: {
     title: "任务总览",
-    headline: "每次运行，都有记录可查。",
-    description: "查看本机 CLI 留下的运行状态、事件与可校验报告。",
-    unlock: "P0-04 只读运行记录已接通；网页执行留待 P1-01",
+    headline: "让一次调用，给出可核对的结果。",
+    description: "运行固定合成场景，查看真实状态、事件与可校验报告。",
+    unlock: "四种固定场景网页复现接入验收；任意工具与模型修复尚未开放",
     action: "查看运行记录",
     eyebrow: "任务与运行进度",
   },
@@ -46,7 +46,7 @@ export const modules = {
     headline: "连接工具，把观察变成真实证据。",
     description:
       "查看工具声明、协议与连接状态，将一次真实调用送入同一套检查流程。",
-    unlock: "CLI 与公开复现已验证；受控 Docker CLI 已通过验收。运行记录已可查看；网页发起执行待 P1-01 接入",
+    unlock: "CLI 与公开复现已验证；受控 Docker CLI 已通过验收。任务总览接入四种固定场景；自定义工具接入仍待开发",
     action: "预览接入配置",
     eyebrow: "工具接入与进度",
   },

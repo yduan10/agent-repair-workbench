@@ -46,6 +46,7 @@ test("真实 SQLite → 只读 API → 页面 → 原字节报告，以及断网
   const unknown = seeded.runs.find(run => run.status === "outcome_unknown")!;
   await page.getByRole("button", { name: `查看运行 ${unknown.run_id}` }).click();
   await expect(detail).toContainText("结果未知");
+  await page.getByText("技术详情：ID、版本与摘要", { exact: true }).click();
   await expect(detail).toContainText("执行器不可用");
   expect(writes).toEqual([]);
 });

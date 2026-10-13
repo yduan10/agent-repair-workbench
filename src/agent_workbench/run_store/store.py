@@ -25,9 +25,9 @@ from agent_workbench.mcp_config import canonical, digest
 from agent_workbench.runner.models import SandboxConfig, SandboxReport
 
 from .models import Claim, EventView, RunDetail, RunView, StoreError
-from .schema import artifacts, attempts, events, runs
+from .schema import artifacts, attempts, events, runs, web_requests
 
-REVISION = "0001_run_store"
+REVISION = "0002_web_requests"
 MAX_REPORT = 1_048_576
 TERMINAL = ("succeeded", "failed", "cancelled", "outcome_unknown")
 EXECUTORS = ("absent", "running", "stopped", "unavailable", "mismatch")
@@ -138,7 +138,12 @@ class RunStore:
         revisions = list(connection.exec_driver_sql("SELECT version_num FROM alembic_version"))
         if allow_empty and not revisions and names == {"alembic_version"}:
             return
-        if revisions != [(REVISION,)] or not {"runs", "attempts", "events", "artifacts"} <= names:
+        supported = revisions == [(REVISION,)] or (
+            allow_empty and revisions == [("0001_run_store",)]
+        )
+        if not supported or not {"runs", "attempts", "events", "artifacts"} <= names:
+            raise StoreError("schema_incompatible")
+        if revisions == [(REVISION,)] and "web_requests" not in names:
             raise StoreError("schema_incompatible")
 
     @staticmethod
@@ -176,7 +181,7 @@ class RunStore:
 
     def downgrade_empty(self) -> None:
         with self._transaction(write=True) as connection:
-            for table in (runs, attempts, events, artifacts):
+            for table in (runs, attempts, events, artifacts, web_requests):
                 if connection.execute(select(table).limit(1)).first() is not None:
                     raise StoreError("migration_not_empty")
             command.downgrade(self._migration(connection), "base")
@@ -230,25 +235,38 @@ class RunStore:
         except (ValidationError, ValueError, TypeError):
             raise StoreError("invalid_configuration") from None
         with self._transaction(write=True) as connection:
-            now, run_id = self._now(), str(uuid4())
-            connection.execute(
-                runs.insert().values(
-                    run_id=run_id,
-                    status="queued",
-                    version=1,
-                    created_at=now,
-                    updated_at=now,
-                    profile=profile,
-                    scenario=scenario,
-                    config_sha256=config_sha256,
-                    case_sha256=case_sha256,
-                )
+            return self._create(
+                connection, str(uuid4()), profile, scenario, config_sha256, case_sha256
             )
-            view = self._view(connection, run_id)
-            self._add_event(
-                connection, view, "created", str(uuid4()), digest(canonical(view.model_dump()))
+
+    def _create(
+        self,
+        connection: Connection,
+        run_id: str,
+        profile: str,
+        scenario: str,
+        config_sha256: str,
+        case_sha256: str,
+    ) -> RunView:
+        now = self._now()
+        connection.execute(
+            runs.insert().values(
+                run_id=run_id,
+                status="queued",
+                version=1,
+                created_at=now,
+                updated_at=now,
+                profile=profile,
+                scenario=scenario,
+                config_sha256=config_sha256,
+                case_sha256=case_sha256,
             )
-            return view
+        )
+        view = self._view(connection, run_id)
+        self._add_event(
+            connection, view, "created", str(uuid4()), digest(canonical(view.model_dump()))
+        )
+        return view
 
     def claim(self, run_id: str, expected_version: int, lease_seconds: int = 120) -> Claim:
         _uuid(run_id)
@@ -256,50 +274,55 @@ class RunStore:
         if type(lease_seconds) is not int or not 1 <= lease_seconds <= 120:
             raise StoreError("invalid_lease")
         with self._transaction(write=True) as connection:
-            now, attempt_id, token = self._now(), str(uuid4()), secrets.token_hex(32)
-            result = connection.execute(
-                update(runs)
-                .where(
-                    runs.c.run_id == run_id,
-                    runs.c.version == expected_version,
-                    runs.c.status == "queued",
-                )
-                .values(
-                    status="running",
-                    version=expected_version + 1,
-                    updated_at=now,
-                    attempt_id=attempt_id,
-                    lease_until=now + lease_seconds,
-                )
+            return self._claim(connection, run_id, expected_version, lease_seconds)
+
+    def _claim(
+        self, connection: Connection, run_id: str, expected_version: int, lease_seconds: int = 120
+    ) -> Claim:
+        now, attempt_id, token = self._now(), str(uuid4()), secrets.token_hex(32)
+        result = connection.execute(
+            update(runs)
+            .where(
+                runs.c.run_id == run_id,
+                runs.c.version == expected_version,
+                runs.c.status == "queued",
             )
-            if result.rowcount != 1:
-                raise StoreError("version_conflict")
-            connection.execute(
-                attempts.insert().values(
-                    attempt_id=attempt_id,
-                    run_id=run_id,
-                    lease_token=token,
-                    started_at=now,
-                    status="running",
+            .values(
+                status="running",
+                version=expected_version + 1,
+                updated_at=now,
+                attempt_id=attempt_id,
+                lease_until=now + lease_seconds,
+            )
+        )
+        if result.rowcount != 1:
+            raise StoreError("version_conflict")
+        connection.execute(
+            attempts.insert().values(
+                attempt_id=attempt_id,
+                run_id=run_id,
+                lease_token=token,
+                started_at=now,
+                status="running",
+            )
+        )
+        view = self._view(connection, run_id)
+        self._add_event(
+            connection,
+            view,
+            "claimed",
+            str(uuid4()),
+            digest(
+                canonical(
+                    {
+                        "run_id": run_id,
+                        "attempt_id": attempt_id,
+                        "version": view.version,
+                    }
                 )
-            )
-            view = self._view(connection, run_id)
-            self._add_event(
-                connection,
-                view,
-                "claimed",
-                str(uuid4()),
-                digest(
-                    canonical(
-                        {
-                            "run_id": run_id,
-                            "attempt_id": attempt_id,
-                            "version": view.version,
-                        }
-                    )
-                ),
-            )
-            return Claim(run=view, token=token)
+            ),
+        )
+        return Claim(run=view, token=token)
 
     def finish(
         self,
@@ -555,6 +578,12 @@ class RunStore:
                         runs.c.status.in_(TERMINAL),
                         runs.c.executor_state == "absent",
                         runs.c.updated_at < cutoff,
+                        ~exists(
+                            select(web_requests.c.request_id).where(
+                                web_requests.c.request_id == runs.c.run_id,
+                                web_requests.c.active == 1,
+                            )
+                        ),
                         exists(
                             select(artifacts.c.run_id).where(artifacts.c.run_id == runs.c.run_id)
                         ),

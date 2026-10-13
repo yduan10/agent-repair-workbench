@@ -39,7 +39,7 @@ uv run --frozen pytest
 
 原始 trace 和 `.env` 不提交。分享报告前核对字段路径是否含敏感信息；摘要哈希不是匿名化保证。CLI 不支持 Windows 文件打开语义，Windows 移植需独立验收。
 
-## 产品网页（UI-01）
+## 产品网页
 
 在项目根目录启动本地 API：
 
@@ -56,7 +56,7 @@ NEXT_TELEMETRY_DISABLED=1 npm run build
 NEXT_TELEMETRY_DISABLED=1 npm run start
 ```
 
-访问 <http://127.0.0.1:3010>。产品首页和七个功能入口已设计；调用检查真实可用，任务总览接入本机运行记录、事件和报告；诊断、修复、回归、记忆和接入按模块标注实际能力。侧栏区分网页可用、CLI可用、待接通与待开发；每个模块首屏展示已完成基础、当前使用入口和后续依赖。全站支持浅色、深色及跟随系统，主题偏好仅保存在本机；[迭代历史](http://127.0.0.1:3010/updates) 保留各阶段的改进和边界。
+访问 <http://127.0.0.1:3010>。产品首页和七个功能入口已设计；调用检查真实可用，任务总览支持固定场景复现、停止请求、运行记录、校验报告与复现命令；诊断、修复、回归、记忆和接入按模块标注实际能力。侧栏区分网页可用、CLI可用、待接通与待开发；每个模块首屏展示已完成基础、当前使用入口和后续依赖。全站支持浅色、深色及跟随系统，主题偏好仅保存在本机；[迭代历史](http://127.0.0.1:3010/updates) 保留各阶段的改进和边界。
 
 ### 前端测试
 
@@ -94,7 +94,7 @@ AWB_PUBLIC_CASE=1 uv run --frozen pytest -m public_case
 ## 受控容器执行（P0-03）
 
 前提：本机 Linux Docker daemon（macOS 可用现有 Colima）、固定基础镜像已明确准备。
-仅运行项目审核过的合成故障服务；不执行用户上传命令，不开放 Web 容器运行。
+仅运行项目审核过的合成故障服务；网页任务总览可发起下述四种固定场景，不接受用户上传的命令或代码。
 
 ```sh
 uv run --frozen python containers/p0_03/prepare.py
@@ -134,7 +134,7 @@ AWB_PUBLIC_CASE=1 AWB_DOCKER_TESTS=1 uv run --frozen pytest
 `sandbox-check` 现在先保存执行租约，再启动容器；终态、事件、报告在同一事务提交。
 CLI 报告 `record_id` 是持久运行 ID，原 `run_id` 是容器 attempt ID。
 本地默认目录 `artifacts/run-store`，可通过 `AWB_STATE_DIR` 为 CLI 和 API 配置同一个独立目录。
-不保存原始参数/结果，报告摘要不代表匿名化。网页 `/workspace/tasks` 只读展示这个目录的记录。
+不保存原始参数/结果，报告摘要不代表匿名化。网页 `/workspace/tasks` 使用这个目录，支持发起固定场景、请求停止、查看记录与校验报告。
 
 ```sh
 uv run --frozen agent-workbench runs init
@@ -151,7 +151,7 @@ uv run --frozen agent-workbench runs prune --days 30 --apply
 `prune` 默认只预览，只有超期终态、资源确认不存在且报告有效的记录可清理。
 没有可靠报告的崩溃记录保留待人工调查。资源清理使用 `sandbox-reap --run-id <attempt_id>`。
 
-迁移当前版本 `0001_run_store`。含数据时禁止降级；活动数据库备份必须使用 SQLite
+迁移当前版本 `0002_web_requests`；已有 `0001_run_store` 需停止写入、备份后显式运行 `runs init` 升级，GET 不自动迁移。含数据时禁止降级；活动数据库备份必须使用 SQLite
 `Connection.backup()`，不能只复制主数据库而漏掉 WAL。先停止 CLI/API 写入再切换恢复目录；
 通过 `AWB_STATE_DIR` 指向恢复副本，执行 `runs list/show/report` 核对记录与摘要后再使用。
 备份与恢复的可执行演练见 `tests/test_run_store.py::test_live_wal_backup_refused_downgrade_and_restore`。
@@ -160,3 +160,17 @@ uv run --frozen agent-workbench runs prune --days 30 --apply
 ## 协作接口目录（P0-05a）
 
 工具接入与诊断页可通过本机`GET /api/agent-contracts`查看、下载三个角色及五类工具请求的实际JSON schema。接口只读，`runtime_available=false`；契约与权限校验已实现，模型循环、工具handler和分析记录存储仍待P0-05b。详见[冻结规格](docs/18-p0-05a-contracts.md)与[验收记录](docs/19-p0-05a-delivery.md)。
+
+## 网页受控复现（P1-01a）
+
+1. 按上文显式准备 Docker 固定镜像，执行 `uv run --frozen agent-workbench runs init`。
+2. 启动 API 和前端，进入 `/workspace/tasks`，选择正常调用、工具错误、调用超时或响应丢失。
+3. 点击“开始复现”，查看真实状态事件与核验报告。正常调用应通过，工具错误应失败，发送后的超时/响应丢失应为结果未知。
+4. “请求停止运行”只表示提交取消请求，实际终态与资源回收以报告为准。离页不会取消任务，断线后只查询同一请求。
+5. 展开“在终端运行此场景”，下载配置并放到项目根目录，复制命令进行同场景新运行。它不是嵌入宿主 Shell，也不承诺重放旧记录的完整环境。
+
+当前是本机单用户、单个网页执行槽。旧请求重放不重复执行；数据库清理后的旧请求 ID 返回 410。进程异常后按上文显式 `runs reconcile`，不自动重跑不明状态的操作。
+前端使用默认 3010、API 8030；更换前端端口时，API 启动前须指定 `AWB_FRONTEND_PORT`，只允许该端口的本机 Origin。`AWB_API_PORT` 配置 Next 构建代理目标。
+
+本批验证的是受控合成故障的真实执行。模型诊断、生成补丁和候选验收尚未接通，不能从这些结果计算 Agent 修复成功率。
+[实现契约与测试矩阵](docs/22-web-reproduction.md) · [验收记录](docs/23-p1-01a-delivery.md)

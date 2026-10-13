@@ -12,6 +12,8 @@ from agent_workbench.run_store.store import RunStore
 from agent_workbench.runner.docker import DockerControl, DockerFailure
 from agent_workbench.runner.models import SandboxConfig, SandboxReport
 from agent_workbench.runner.service import run_sandbox
+from agent_workbench.web_runs.fencing import OwnerFence
+from agent_workbench.web_runs.store import WebRunStore
 
 
 def terminal_status(report: SandboxReport) -> RunStatus:
@@ -106,23 +108,40 @@ async def reconcile_runs(store: RunStore) -> list[RunView]:
         pass
     updated = []
     for run in pending:
-        resource = "unavailable"
-        if control is not None and run.attempt_id is not None:
-            try:
-                item = await control.inspect("awb-p003-" + run.attempt_id)
-                if item is None:
-                    resource = "absent"
-                elif not control._matches(item, run.attempt_id):
-                    resource = "mismatch"
-                else:
-                    resource = "running" if item["State"]["Running"] else "stopped"
-            except (DockerFailure, OSError, KeyError, TypeError, RuntimeError):
-                resource = "unavailable"
+        web = WebRunStore(store.directory)
+        fence: OwnerFence | None = None
         try:
-            updated.append(
-                store.reconcile(run.run_id, expected_version=run.version, executor_state=resource)
-            )
-        except StoreError as error:
-            if error.code not in ("state_conflict", "version_conflict", "run_conflict"):
-                raise
+            if web.is_active(run.run_id):
+                fence = OwnerFence(store.directory)
+                try:
+                    fence.acquire()
+                except StoreError as error:
+                    if error.code == "runner_busy":
+                        continue
+                    raise
+            resource = "unavailable"
+            if control is not None and run.attempt_id is not None:
+                try:
+                    item = await control.inspect("awb-p003-" + run.attempt_id)
+                    if item is None:
+                        resource = "absent"
+                    elif not control._matches(item, run.attempt_id):
+                        resource = "mismatch"
+                    else:
+                        resource = "running" if item["State"]["Running"] else "stopped"
+                except (DockerFailure, OSError, KeyError, TypeError, RuntimeError):
+                    resource = "unavailable"
+            try:
+                updated.append(
+                    store.reconcile(
+                        run.run_id, expected_version=run.version, executor_state=resource
+                    )
+                )
+            except StoreError as error:
+                if error.code not in ("state_conflict", "version_conflict", "run_conflict"):
+                    raise
+        finally:
+            if fence is not None:
+                fence.close()
+            web.close()
     return updated

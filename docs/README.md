@@ -27,6 +27,8 @@
 | [19 P0-05a delivery](19-p0-05a-delivery.md) | 本批实现、验收、模型接口探针与边界 | 验收和接续批次变化 |
 | [20 UI guidance and public source](20-ui-05-public-source.md) | UI-05 引导、文档、主题修复及公开源码范围 | 本批验收和发布记录变化 |
 | [21 local document reader](21-ui-06-document-reader.md) | UI-06 站内正文、目录、主题与文档链接 | 文档阅读能力变化 |
+| [22 web reproduction](22-web-reproduction.md) | P1-01a 网页操作、持久接收、取消与测试 | 本批实现及验收变化 |
+| [23 web reproduction delivery](23-p1-01a-delivery.md) | P1-01a 实施、测试与复审记录 | 每批交付与实测结果变化 |
 | reviews/ | 文档及代码评审证据 | 每次评审 |
 
 ## 冲突、版本和决策

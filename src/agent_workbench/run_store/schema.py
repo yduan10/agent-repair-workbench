@@ -49,3 +49,13 @@ artifacts = Table(
     Column("size", Integer, nullable=False),
     Column("payload", LargeBinary, nullable=False),
 )
+
+# Deliberately no FK: deduplication tombstones survive run pruning.
+web_requests = Table(
+    "web_requests",
+    metadata,
+    Column("request_id", String, primary_key=True),
+    Column("payload_sha256", String, nullable=False),
+    Column("active", Integer, nullable=False),
+    Column("cancel_requested", Integer, nullable=False),
+)

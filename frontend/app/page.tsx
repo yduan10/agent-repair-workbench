@@ -150,8 +150,8 @@ export default function ProductHome() {
           <div className="start-heading"><span className="section-note">从这里开始</span><h2 id="start-heading">按你要做的事，直接进入。</h2><p>首次使用先打开调用检查，内置示例无需配置模型。</p></div>
           <div className="start-grid">
             <Link href="/workbench" className="start-card"><Braces aria-hidden="true" /><span className="start-badge">网页可用</span><h3>检查一次失败调用</h3><p>选择示例或导入 JSON，查看不符合项、字段路径并下载报告。</p><span className="start-action">打开调用检查 <ArrowUpRight size={16} aria-hidden="true" /></span></Link>
-            <Link href="/workspace/tasks" className="start-card"><Layers3 aria-hidden="true" /><span className="start-badge">只读记录</span><h3>查看本机运行记录</h3><p>查看 CLI 执行产生的状态、事件和报告；没有运行时显示空列表。</p><span className="start-action">打开任务总览 <ArrowUpRight size={16} aria-hidden="true" /></span></Link>
-            <Link href="/workspace/connections" className="start-card"><Code2 aria-hidden="true" /><span className="start-badge">目录可用 · 执行待接通</span><h3>了解工具与 Agent 接口</h3><p>查看三种角色的权限和 JSON Schema，按文档使用受控 MCP CLI。</p><span className="start-action">打开工具接入 <ArrowUpRight size={16} aria-hidden="true" /></span></Link>
+            <Link href="/workspace/tasks" className="start-card"><Layers3 aria-hidden="true" /><span className="start-badge">受控复现</span><h3>运行一次工具复现</h3><p>选择四种固定故障场景，在本机执行并核验报告；也可查看已有 CLI 记录。</p><span className="start-action">打开任务总览 <ArrowUpRight size={16} aria-hidden="true" /></span></Link>
+            <Link href="/workspace/connections" className="start-card"><Code2 aria-hidden="true" /><span className="start-badge">目录可用 · 自定义接入待开发</span><h3>了解工具与 Agent 接口</h3><p>查看三种角色的权限和 JSON Schema，按文档使用受控 MCP CLI。</p><span className="start-action">打开工具接入 <ArrowUpRight size={16} aria-hidden="true" /></span></Link>
           </div>
         </section>
 
@@ -240,7 +240,7 @@ export default function ProductHome() {
                 <h3>
                   真实 MCP 与受控执行 <b>{capabilities.connections.label}</b>
                 </h3>
-                <p>握手、真实调用、容器隔离与故障回收已验收；网页执行待接通</p>
+                <p>握手、真实调用、容器隔离与故障回收已验收；任务页可运行固定场景</p>
               </div>
             </li>
             <li>
@@ -249,7 +249,7 @@ export default function ProductHome() {
                 <h3>
                   运行记录 <b>{capabilities.tasks.label}</b>
                 </h3>
-                <p>本机 CLI 状态、事件与报告只读查看；网页执行尚未开放</p>
+                <p>固定场景网页发起、请求停止与校验报告；不接受任意命令</p>
                 <Link href="/workspace/tasks" className="text-link">查看运行记录</Link>
               </div>
             </li>

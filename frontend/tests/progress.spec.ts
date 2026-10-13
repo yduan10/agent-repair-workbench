@@ -4,12 +4,12 @@ test("每个模块从侧栏到首屏展示实际进度与可用入口", async ({
   const writes: string[] = [];
   page.on("request", request => { if (request.method() !== "GET") writes.push(request.url()); });
   const states = [
-    ["tasks", "任务总览", "记录可用", "P0-04"],
+    ["tasks", "任务总览", "受控复现", "P1-01a"],
     ["diagnosis", "诊断分析", "开发中", "P0-05"],
     ["repairs", "候选修复", "待开发", "P0-06"],
     ["regression", "回归验证", "待开发", "P0-06"],
     ["memory", "项目记忆", "待开发", "P1-02"],
-    ["connections", "工具接入", "CLI 可用", "P1-01"],
+    ["connections", "工具接入", "CLI 可用", "四种固定合成场景"],
   ];
   for (const [section, label, status, next] of states) {
     await page.goto(`/workspace/${section}`);
@@ -18,6 +18,7 @@ test("每个模块从侧栏到首屏展示实际进度与可用入口", async ({
     await expect(navigation.getByRole("link", { name: new RegExp(label) })).toContainText(status);
     await expect(navigation.getByRole("link", { name: /调用检查/ })).toContainText("网页可用");
     await expect(page.locator(".topbar .preview-status")).toHaveText(status);
+    if (section === "tasks") await page.getByText("当前能力与后续计划", { exact: true }).click();
     const progress = page.getByRole("region", { name: "真实能力进度" });
     await expect(progress).toBeVisible();
     await expect(progress).toContainText("已完成的基础");

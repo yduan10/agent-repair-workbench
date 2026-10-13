@@ -58,7 +58,7 @@ test("降低动效、完整迭代历史与实际能力状态", async ({ page }) 
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)).toBe("auto");
   await page.getByRole("link", { name: "开发记录", exact: true }).first().click();
   const milestones = page.locator(".milestone");
-  await expect(milestones.first()).toContainText("UI-06");
+  await expect(milestones.first()).toContainText("P1-01a");
   for (const id of ["P0-04", "UI-03", "P0-03", "UI-02", "DOC-02", "P0-02", "UI-01", "P0-01", "DOC-01"]) {
     const completed = milestones.filter({ has: page.locator(".milestone-meta > span", { hasText: id }) });
     await expect(completed).toHaveCount(1);
@@ -82,8 +82,8 @@ test("降低动效、完整迭代历史与实际能力状态", async ({ page }) 
   await expect(progress).toContainText("P0-03 · 受控 Docker CLI 已验证");
   await expect(progress).toContainText("18 项真实容器验收及独立复审通过");
   await expect(progress).toContainText("覆盖故障注入、取消回收与宿主进程终止");
-  await expect(progress).toContainText("任务总览已能查看运行记录");
-  await expect(progress).toContainText("网页发起工具执行仍按 P1-01 接入");
+  await expect(progress).toContainText("任务总览接入四种固定合成场景");
+  await expect(progress).toContainText("此页的自定义工具接入仍未开放");
 });
 
 for (const theme of ["dark", "light"] as const) {

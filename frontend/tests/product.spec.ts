@@ -175,7 +175,7 @@ test("BOM 文件保真与未保存导航保护", async ({ page }) => {
     page.getByText("invalid_document", { exact: true }),
   ).toBeVisible();
   page.once("dialog", (dialog) => dialog.dismiss());
-  await page.getByRole("link", { name: "任务总览 记录可用" }).click();
+  await page.getByRole("link", { name: "任务总览 受控复现" }).click();
   await expect(page).toHaveURL(/workbench/);
   await expect(
     page.getByRole("textbox", { name: "调用证据", exact: true }),
@@ -187,7 +187,7 @@ test("BOM 文件保真与未保存导航保护", async ({ page }) => {
     await expect(page.getByRole("textbox", { name: "调用证据", exact: true })).toHaveValue(raw.toString("utf8"));
   }
   page.once("dialog", (dialog) => dialog.accept());
-  await page.getByRole("link", { name: "任务总览 记录可用" }).click();
+  await page.getByRole("link", { name: "任务总览 受控复现" }).click();
   await expect(page).toHaveURL(/workspace\/tasks/);
 });
 

@@ -55,6 +55,7 @@ async def run_sandbox(
     stage_timeout: float = 5,
     total_timeout: float = 30,
     run_id: str | None = None,
+    image_root: Path | None = None,
 ) -> SandboxReport:
     run = _Run(stage_timeout, total_timeout)
     report = SandboxReport(run_id=run_id or str(uuid4()), mcp=run.report)
@@ -75,7 +76,7 @@ async def run_sandbox(
             raise ValueError("invalid_budget")
         config = SandboxConfig.model_validate(parse_json_bytes(config_raw))
         case = CallCase.model_validate(parse_json_bytes(case_raw))
-        manifest = verified_image()
+        manifest = verified_image() if image_root is None else verified_image(image_root)
         if version("mcp") != "2.3.0":
             raise ValueError("unsupported_sdk")
         execution.image_id = manifest.image_id
