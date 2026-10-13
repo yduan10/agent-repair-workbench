@@ -1,6 +1,6 @@
 # UI-05：功能引导、文档入口与公开源码
 
-日期：2026-10-13。状态：in_review。
+日期：2026-10-13。状态：done。
 
 ## 需求及交付范围
 
@@ -43,4 +43,8 @@
 
 公开范围仅 Git 纳入的源码、合成样例、测试、锁文件、规格和脱敏评审记录；不公开 `.env`、运行产物、模型配置、个人原始 trace、数据库和依赖缓存。历史本机路径作占位符处理，旧快照哈希不伪造更新。尚未选择项目开源许可证，在 README 明确说明。公开源码不等于产品公网部署。
 
-目标仓库：https://github.com/yduan10/agent-repair-workbench 。创建 / 推送及远端 CI 结果在实际完成后记录。
+公开仓库：[agent-repair-workbench](https://github.com/yduan10/agent-repair-workbench)。已确认 PUBLIC，初始快照 `c976e0dd63251e9a4a410eef7c6c81b05471bf40` 已推送。发布审计见 [报告](reviews/UI-05-publication-review.md)。
+
+首次远端 CI 暴露两个测试分类/文案同步问题：历史源码实测漏标显式准备门禁；UI 断言仍查旧的“待开发”。CI-01 修复后，`82b1a23ccf2ecd6c93ea79218bc6322729fcca6b` 的 [远端运行](https://github.com/yduan10/agent-repair-workbench/actions/runs/38398454964) 两项 job 成功：Python 394 passed / 23 skipped；界面 47 passed / 1 skipped；真实记录 API 界面 21 passed。原先默认395项中的历史源码实测现归显式门禁，未删除测试。该显式实测本机另行1 passed，缺准备时仍失败关闭。见 [CI-01 复审](reviews/CI-01-review.md)。
+
+上述远端结果针对 UI-05 / CI-01 快照。用户随后纠正工程文档必须站内阅读，UI-06 按[单独规格](21-ui-06-document-reader.md)验收，不将此前结果算作 UI-06 结果。

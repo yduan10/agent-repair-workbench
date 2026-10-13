@@ -26,6 +26,7 @@
 | [18 P0-05a contracts](18-p0-05a-contracts.md) | 角色/工具请求、状态和安全摘要冻结规格 | 契约或权限变化需增量评审 |
 | [19 P0-05a delivery](19-p0-05a-delivery.md) | 本批实现、验收、模型接口探针与边界 | 验收和接续批次变化 |
 | [20 UI guidance and public source](20-ui-05-public-source.md) | UI-05 引导、文档、主题修复及公开源码范围 | 本批验收和发布记录变化 |
+| [21 local document reader](21-ui-06-document-reader.md) | UI-06 站内正文、目录、主题与文档链接 | 文档阅读能力变化 |
 | reviews/ | 文档及代码评审证据 | 每次评审 |
 
 ## 冲突、版本和决策

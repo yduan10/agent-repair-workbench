@@ -1,6 +1,4 @@
 import { test, expect } from "@playwright/test";
-import { existsSync } from "node:fs";
-import { resolve } from "node:path";
 
 const source = "https://github.com/yduan10/agent-repair-workbench";
 
@@ -14,9 +12,9 @@ test("首次访问能找到真实功能、文档和源码", async ({ page }) => 
   await footer.getByRole("link", { name: "项目文档", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("项目文档");
   await expect(page.locator("#agent-testing")).toContainText("P0-05b 待接通");
-  for (const href of await page.locator(`a[href^="${source}/blob/main/"]`).evaluateAll(links => links.map(a => a.getAttribute("href")!))) {
-    expect(existsSync(resolve("..", href.split("/blob/main/")[1])), href).toBe(true);
-  }
+  await page.getByRole("link", { name: /架构与技术决策/ }).click();
+  await expect(page).toHaveURL(/\/docs\/02-architecture$/);
+  await expect(page.locator(".markdown-document")).toContainText("技术");
   await page.goto("/");
   const github = page.getByRole("region", { name: "文档与源码" }).getByRole("link", { name: /GitHub 源码/ });
   await expect(github).toHaveAttribute("href", source);

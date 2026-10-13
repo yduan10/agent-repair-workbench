@@ -32,6 +32,16 @@
 - 首次慢请求被切换取消、详情保留B且不包含A、离页requestfailed事件和最终diagnosis URL断言全部保留。
 - 未添加skip、宽泛异常吞并、额外等待或放宽取消断言。
 
+### 主任务提供的实际环境验证
+
+以下结果由主任务执行并提供，独立评审者未重复运行：
+
+- 默认测试：14 passed / 1 skipped，0.15秒。
+- 已准备真实上游源码，`AWB_PUBLIC_CASE=1 pytest experiments/public_mcp_case/test_prepare.py -k real_verify`：1 passed / 14 deselected，0.82秒。
+- Playwright `runs.spec.ts -g 切换选择`：1 passed，2.3秒；迟到详情与取消断言实际执行。
+
+这些证据补充独立静态审查与隔离反例，不代表远端GitHub CI已重跑通过。
+
 ## 4. 维度覆盖
 
 | 维度 | 结论 |

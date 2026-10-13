@@ -86,3 +86,11 @@ Starlette TestClient 对 httpx 发出弃用提示，当前测试仍通过；后�
 `uvx pip-audit --path .venv/lib/python3.12/site-packages --format json --output artifacts/dependency-audit-p004.json`：
 51 个环境条目、50 个公告查询、本地项目跳过，0 条已知漏洞。
 新增迁移变更必须继续覆盖原子提交、恢复备份、含数据降级拒绝和未知 schema 拒绝。
+
+## UI-06 文档渲染增量
+
+- react-markdown 10.1.0（MIT）与 remark-gfm 4.0.1（MIT），固定版本并更新 npm 锁。
+- 仅服务端解析受版本控制的 Markdown；不启用 raw HTML 或 MDX。
+- 引入时 `npm audit --omit=dev` 0 已知漏洞；npm install 全树审计亦为0。官方说明：[react-markdown](https://github.com/remarkjs/react-markdown)、[remark-gfm](https://github.com/remarkjs/remark-gfm)。
+
+- Mermaid 12.2.0（MIT）：仅图表页客户端惰性加载，严格模式，禁用HTML标签；支持受版本控制的flowchart，配置指令、图片形状和链接动作回退源码，不开放用户上传图表。生成SVG作为无脚本图片展示；渲染失败仍可读源码。主题变更重绘，异步结果按组件生命周期与版本隔离。安装后全树审计0已知漏洞。官方说明：[Mermaid](https://mermaid.js.org/config/usage.html)。

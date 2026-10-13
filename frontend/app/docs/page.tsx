@@ -1,16 +1,10 @@
 import Link from "next/link";
 import { ArrowLeft, ArrowUpRight, BookOpen } from "lucide-react";
 import ThemeControl from "../../components/theme-control";
-import { repositoryUrl, sourceDocument } from "../../lib/project";
+import { repositoryUrl } from "../../lib/project";
+import { documentationEntries, documentationUrl } from "../../lib/documentation";
 
-const documents = [
-  ["本地安装与运行", "README.md", "安装依赖、启动服务、CLI 与容器准备命令。"],
-  ["架构与技术决策", "docs/02-architecture.md", "组件边界、状态持久化和 Agent 协作设计。"],
-  ["Agent、工具与测试用例", "docs/17-agent-tools-testing-plan.md", "三个角色、八类工具与 26 项后续验收要求。"],
-  ["P0 / P1 迭代计划", "docs/03-roadmap.md", "依赖、当前进度、完成证据与下一步。"],
-  ["本批 Agent 契约验收", "docs/19-p0-05a-delivery.md", "实际通过的测试、模型探针与未实现范围。"],
-  ["完整文档目录", "docs/README.md", "产品约束、隔离执行、恢复、质量门禁和全部规格。"],
-];
+
 
 export default function DocsPage() {
   return <div className="docs-page">
@@ -56,9 +50,9 @@ npm run build
 npx playwright install chromium
 npm run test:e2e`}</code></pre>
         <p className="docs-note">容器和公开历史故障须先按 README 审核、准备，之后使用 AWB_DOCKER_TESTS=1 / AWB_PUBLIC_CASE=1 显式执行。跳过项不计通过。</p>
-        <a className="text-link" href={sourceDocument("docs/17-agent-tools-testing-plan.md")} target="_blank" rel="noopener noreferrer">查看逐项验收用例与预期结果 <ArrowUpRight size={16} aria-hidden="true" /></a>
+        <Link className="text-link" href="/docs/17-agent-tools-testing-plan">查看逐项验收用例与预期结果 <ArrowUpRight size={16} aria-hidden="true" /></Link>
       </section>
-      <section id="engineering-docs" className="docs-section"><h2>工程文档</h2><p>以下链接在 GitHub 新标签页打开，与源代码一起维护。</p><div className="docs-links">{documents.map(([title, path, summary]) => <a key={path} href={sourceDocument(path)} target="_blank" rel="noopener noreferrer"><BookOpen size={20} aria-hidden="true" /><div><h3>{title}</h3><p>{summary}</p></div><ArrowUpRight size={16} aria-hidden="true" /></a>)}</div></section>
+      <section id="engineering-docs" className="docs-section"><h2>工程文档</h2><p>在本站阅读完整文档；文档与代码一起维护，支持章节导航和浅深色主题。</p><div className="docs-links">{documentationEntries.map(({title, slug, summary}) => <Link key={slug} href={documentationUrl(slug)}><BookOpen size={20} aria-hidden="true" /><div><h3>{title}</h3><p>{summary}</p></div><ArrowUpRight size={16} aria-hidden="true" /></Link>)}</div></section>
     </main>
     <footer className="product-footer"><span>Agent 修复台</span><Link href="/updates">开发记录</Link><a href={repositoryUrl} target="_blank" rel="noopener noreferrer">GitHub 源码 ↗</a></footer>
   </div>;

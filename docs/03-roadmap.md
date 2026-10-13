@@ -26,7 +26,8 @@
 | P0-04 | M1 运行状态、产物、恢复对账 | P0-03 | 2–4 天 | done | [后端验收](14-run-store.md)、[真实记录页](15-run-history-ui.md)、[store评审](reviews/P0-04-store-review.md)、[协调评审](reviews/P0-04-coordinator-review.md)、[UI评审](reviews/P0-04-ui-review.md)；340完整Python+4独立反例，29主UI+20隔离UI通过；planned → ready → in_progress → in_review → done |
 | UI-04 | 产品信息入口与工作导航分层 | P0-04 | 本次 | done | [设计及验收](16-navigation-hierarchy.md)、[独立复审](reviews/UI-04-review.md)；build/typecheck及8项修复后定向验收通过；planned → ready → in_progress → in_review → done |
 | DOC-03 | 产品闭环、Agent/tools边界与测试用例规格 | P0-04 | 本次 | done | [实施规格](17-agent-tools-testing-plan.md)、[独立文档复审](reviews/DOC-03-review.md)；8工具/26验收用例矩阵及链接核对，D01/D02修复复审；planned → ready → in_progress → in_review → done；不计Agent运行实现完成 |
-| UI-05 | 功能引导、文档入口、主题修复与公开源码 | P0-05a | 本次 | in_review | [范围与验收](20-ui-05-public-source.md)；planned → ready → in_progress → in_review |
+| UI-06 | 站内工程文档阅读器与排版 | UI-05 | 本次 | done | [规格](21-ui-06-document-reader.md)；planned → ready → in_progress → in_review → done；[复审](reviews/UI-06-code-review.md) |
+| UI-05 | 功能引导、文档入口、主题修复与公开源码 | P0-05a | 本次 | done | [范围与验收](20-ui-05-public-source.md)；planned → ready → in_progress → in_review → done |
 | P0-05 | M2 三角色有限循环、模型适配与预算 | P0-04 | 3–5 天 | in_progress | planned → ready → in_progress；[P0-05a已完成](19-p0-05a-delivery.md)，独立前后端复审通过；P0-05b及完整A矩阵待实现，完整里程碑未完成 |
 | P0-06 | M2 隔离补丁、冻结验收、基线候选比较 | P0-05 | 3–5 天 | planned | 待实现 |
 

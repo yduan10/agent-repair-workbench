@@ -46,7 +46,7 @@ flowchart LR
 | 网页 | Next.js + TS + Tailwind；shadcn/ui + Monaco 按需 | UI-01 产品首页及完整模块预览；真实任务能力逐项接入 | UI-01 提前引入 |
 | 测试 | pytest + Hypothesis + Ruff + mypy | 行为、性质、静态约束 | M0 引入 |
 | 观测 | JSON 报告；后续 structlog+事件流 | 失败必须可查，默认不落原始数据 | 分期 |
-| CI | GitHub Actions | 确定性门禁；模型评估单独预算 | M0 配置，远端执行待仓库发布 |
+| CI | GitHub Actions | 确定性门禁；模型评估单独预算 | 已随公开开发快照执行；见 UI-05 / CI-01 验收 |
 
 依赖只在需要的任务引入；候选栈不是安装清单。暂不引入 A2A、Redis、Celery、pgvector、Kubernetes、通用调度平台。
 

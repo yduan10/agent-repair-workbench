@@ -1,7 +1,14 @@
 /** Development milestones, backfilled from docs/03-roadmap.md; not release versions. */
 export const milestones = [
   {
-    id: "UI-05", date: "2026-10-13", status: "已完成", active: true,
+    id: "UI-06", date: "2026-10-13", status: "已完成", active: true,
+    title: "站内工程文档阅读与排版",
+    summary: "工程文档改为本站完整阅读，沿用产品主题，增加文档导航、章节目录和代码表格排版。",
+    changes: ["架构、测试方案、迭代计划与评审记录从仓库原文生成独立阅读页。", "文档之间的相对引用在本站跳转，GitHub 入口保留为源码访问。", "窄屏目录可展开，表格、代码与架构图支持键盘阅读；浅深色及独立复审通过。"],
+    boundary: "正文随项目构建更新；模型协作循环和补丁验收仍按原计划开发。",
+  },
+  {
+    id: "UI-05", date: "2026-10-13", status: "已完成", active: false,
     title: "功能引导、项目文档与深色空状态修复",
     summary: "首页增加实际功能入口，接入文档与 GitHub 源码入口，开发记录改为直接描述改动。",
     changes: ["修复空状态固定浅色光晕，浅色与深色共用主题变量。", "新增文档页：快速上手、Agent 测试步骤、工程规格与源码链接。", "保留历史记录和草稿离开保护，公开源码不包含本机凭据和运行产物。"],
