@@ -5,6 +5,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 import subprocess
 import sys
 import tarfile
@@ -13,6 +14,8 @@ import time
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+
+import pytest
 
 SCRIPT = Path(__file__).with_name("prepare.py")
 SPEC = importlib.util.spec_from_file_location("public_case_prepare", SCRIPT)
@@ -141,6 +144,8 @@ class SourceVerificationTests(unittest.TestCase):
         self.assertEqual(json.loads(output.getvalue()), {"code": "source_unavailable"})
 
 
+@pytest.mark.public_case
+@unittest.skipUnless(os.environ.get("AWB_PUBLIC_CASE") == "1", "run explicit public case gate")
 class OfficialSourceVerificationTests(unittest.TestCase):
     def test_real_verify_only_under_five_seconds_without_mutations(self) -> None:
         def snapshot() -> dict[str, tuple[int, int]]:
