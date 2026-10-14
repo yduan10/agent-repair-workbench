@@ -10,6 +10,8 @@ const config: NextConfig = {
   turbopack: { root: path.resolve(process.cwd(), "..") },
   async rewrites() {
     return [
+      { source: "/api/analyses", destination: `http://127.0.0.1:${apiPort}/api/analyses` },
+      { source: "/api/analyses/:id([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})", destination: `http://127.0.0.1:${apiPort}/api/analyses/:id` },
       { source: "/api/reproductions/catalog", destination: `http://127.0.0.1:${apiPort}/api/reproductions/catalog` },
       { source: "/api/reproductions", destination: `http://127.0.0.1:${apiPort}/api/reproductions` },
       { source: "/api/reproductions/:id([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/cancel", destination: `http://127.0.0.1:${apiPort}/api/reproductions/:id/cancel` },

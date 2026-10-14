@@ -114,7 +114,15 @@ def main(argv: list[str] | None = None) -> int:
     from agent_workbench.run_store.cli import configure as configure_runs
 
     configure_runs(commands.add_parser("runs", help="inspect durable local execution records"))
+    from agent_workbench.orchestration.cli import configure, configure_history
+
+    configure(commands.add_parser("analyze", help="analyze a reviewed case with bounded roles"))
+    configure_history(commands.add_parser("analyses", help="read or reconcile analyses"))
     args = parser.parse_args(argv)
+    if args.command in ("analyze", "analyses"):
+        from agent_workbench.orchestration.cli import main as analyses_main
+
+        return analyses_main(args)
     if args.command == "runs":
         from agent_workbench.run_store.cli import main as runs_main
 

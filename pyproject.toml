@@ -15,6 +15,10 @@ dependencies = [
     "mcp==2.3.0",
     "sqlalchemy>=2.0,<2.1",
     "alembic>=1.16,<2",
+    "langgraph==1.2.15",
+    "httpx>=0.28,<1",
+    "langchain-core==1.6.10",
+    "langsmith==0.14.8",
 ]
 
 [project.scripts]

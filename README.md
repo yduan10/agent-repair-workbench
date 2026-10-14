@@ -18,7 +18,7 @@
 
 仓库：https://github.com/yduan10/agent-repair-workbench
 
-本地启动后访问 `/docs` 阅读上手与测试说明。当前公开的是开发中的源码快照，模型协作循环与实际补丁验收尚未接通。当前未附项目开源许可证，公开可见不代表已授予通用开源许可；第三方依赖按各自许可证使用。
+本地启动后访问 `/docs` 阅读上手与测试说明。当前公开的是开发中的源码快照，CLI 模型协作与网页分析记录已接通；实际补丁应用和冻结回归仍待 P0-06。当前未附项目开源许可证，公开可见不代表已授予通用开源许可；第三方依赖按各自许可证使用。
 
 ## 本地运行（macOS / Linux，Python 3.12）
 
@@ -151,7 +151,7 @@ uv run --frozen agent-workbench runs prune --days 30 --apply
 `prune` 默认只预览，只有超期终态、资源确认不存在且报告有效的记录可清理。
 没有可靠报告的崩溃记录保留待人工调查。资源清理使用 `sandbox-reap --run-id <attempt_id>`。
 
-迁移当前版本 `0002_web_requests`；已有 `0001_run_store` 需停止写入、备份后显式运行 `runs init` 升级，GET 不自动迁移。含数据时禁止降级；活动数据库备份必须使用 SQLite
+迁移当前版本 `0003_analyses`；已有 `0001_run_store` 或 `0002_web_requests` 需停止写入、备份后显式运行 `runs init` 升级，GET 不自动迁移。含数据时禁止降级；活动数据库备份必须使用 SQLite
 `Connection.backup()`，不能只复制主数据库而漏掉 WAL。先停止 CLI/API 写入再切换恢复目录；
 通过 `AWB_STATE_DIR` 指向恢复副本，执行 `runs list/show/report` 核对记录与摘要后再使用。
 备份与恢复的可执行演练见 `tests/test_run_store.py::test_live_wal_backup_refused_downgrade_and_restore`。
@@ -159,7 +159,7 @@ uv run --frozen agent-workbench runs prune --days 30 --apply
 
 ## 协作接口目录（P0-05a）
 
-工具接入与诊断页可通过本机`GET /api/agent-contracts`查看、下载三个角色及五类工具请求的实际JSON schema。接口只读，`runtime_available=false`；契约与权限校验已实现，模型循环、工具handler和分析记录存储仍待P0-05b。详见[冻结规格](docs/18-p0-05a-contracts.md)与[验收记录](docs/19-p0-05a-delivery.md)。
+工具接入与诊断页可通过本机`GET /api/agent-contracts`查看、下载三个角色及五类工具请求的实际JSON schema。目录 catalog_version=2，`cli_runtime_available=true`、`web_runtime_available=false`；CLI 模型循环、五类工具 handler 和分析摘要存储已接通，网页不发起模型调用。详见[冻结规格](docs/18-p0-05a-contracts.md)与[验收记录](docs/19-p0-05a-delivery.md)。
 
 ## 网页受控复现（P1-01a）
 
@@ -172,5 +172,42 @@ uv run --frozen agent-workbench runs prune --days 30 --apply
 当前是本机单用户、单个网页执行槽。旧请求重放不重复执行；数据库清理后的旧请求 ID 返回 410。进程异常后按上文显式 `runs reconcile`，不自动重跑不明状态的操作。
 前端使用默认 3010、API 8030；更换前端端口时，API 启动前须指定 `AWB_FRONTEND_PORT`，只允许该端口的本机 Origin。`AWB_API_PORT` 配置 Next 构建代理目标。
 
-本批验证的是受控合成故障的真实执行。模型诊断、生成补丁和候选验收尚未接通，不能从这些结果计算 Agent 修复成功率。
+P1-01a 验证的是受控合成故障的真实执行；不能从这些结果计算 Agent 修复成功率。后续 CLI 模型协作见下面 P0-05b；实际补丁应用和候选验收仍待 P0-06。
 [实现契约与测试矩阵](docs/22-web-reproduction.md) · [验收记录](docs/23-p1-01a-delivery.md)
+
+## 有界 Agent 分析（P0-05b）
+
+本批已通过工程验收、一次真实模型完整协作与独立代码复审。CLI发起、网页 `/workspace/diagnosis` 只读分析结果；工具只允许项目审核的合成案例。`proposal_only` 是未应用、未执行验证的源码片段建议，不能当作已修复。
+
+先显式初始化/升级本地记录（已有数据先备份；0003兼容已有运行记录）：
+
+```sh
+uv run --frozen agent-workbench runs init
+uv run --frozen agent-workbench analyze --case output_mismatch --intent check_only
+uv run --frozen agent-workbench analyses list
+```
+
+`check_only` 不读取模型凭据、模型调用为0。模型分析使用现有兼容接口，环境配置：
+
+| 环境变量 | 用途 |
+|---|---|
+| AWB_MODEL_BASE_URL | 自己授权的现有网关地址（可带 `/v1`） |
+| AWB_MODEL_NAME | 审核profile支持 `deepseek-flash` / `deepseek-v4-1-flash` / `deepseek-v4-1-flash-260910` |
+| AWB_MODEL_API_KEY | 仅进程环境提供；禁止写入源码、命令参数或截图 |
+| AWB_MODEL_LIMIT_PROFILE | 显式配置 `deepseek-v4.1-flash-1m-v1`，表示接受官方上界到自己网关的条件性映射 |
+
+不配置变量则不会请求模型；不下载或替换模型。真实分析向该网关发送审核合成证据、角色提示词和已授权四行源码片段，不发环境变量或本机其他文件。
+
+```sh
+uv run --frozen agent-workbench analyze --case output_mismatch --intent diagnose
+uv run --frozen agent-workbench analyze --case output_mismatch --intent propose_repair
+uv run --frozen agent-workbench analyses show <task-uuid>
+# 中断后只对账并标记未知，不继续图或重发调用
+uv run --frozen agent-workbench analyses reconcile <task-uuid>
+```
+
+需要T05实际复现时，须先按上面的容器步骤显式准备镜像。默认task总额度2,000,000（保守调用前预留）；单次输出诊断/验证4,096、修复8,192，最多12次模型/20次工具/2份建议/600秒。合法usage按实际结算；缺失或不合法usage保留预留并停止，费用始终未知。通过 `--total-tokens`、`--output-tokens`、`--model-calls`、`--tool-calls`、`--timeout` 收紧；预算小于provider完整上界时真实请求会拒发。
+
+**测试顺序**：先跑 `uv run pytest tests/agents tests/test_analysis_store.py tests/test_controlled_resources.py tests/test_controlled_runtime.py`；再显式 `AWB_TOOL_DOCKER=1 uv run pytest tests/test_controlled_tools_docker.py`；最后配置自己的现有接口执行上述analyze并检查网页。fake测试只验证工程规则，真实模型结果单独记录，不等同修复成功率。
+
+实际模型运行、工程测试、独立评审与能力边界见 [P0-05b 交付验收](docs/25-p0-05b-delivery.md)。真实 SQLite/API/浏览器门禁：`cd frontend && npm run test:analyses-live`（独立临时数据库，不调用模型）。

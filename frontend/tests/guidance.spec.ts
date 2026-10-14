@@ -11,7 +11,7 @@ test("首次访问能找到真实功能、文档和源码", async ({ page }) => 
   const footer = page.getByRole("region", { name: "产品信息" });
   await footer.getByRole("link", { name: "项目文档", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("项目文档");
-  await expect(page.locator("#agent-testing")).toContainText("P0-05b 待接通");
+  await expect(page.locator("#agent-testing")).toContainText("CLI 已接通，网页只读");
   await page.getByRole("link", { name: /架构与技术决策/ }).click();
   await expect(page).toHaveURL(/\/docs\/02-architecture$/);
   await expect(page.locator(".markdown-document")).toContainText("技术");

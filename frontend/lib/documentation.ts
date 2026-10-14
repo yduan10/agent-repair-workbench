@@ -5,6 +5,7 @@ export const documentationEntries = [
   { title: "P0 / P1 迭代计划", slug: "03-roadmap", summary: "任务依赖、当前进度与验收依据。" },
   { title: "Agent、工具与测试用例", slug: "17-agent-tools-testing-plan", summary: "角色职责、工具设计和逐项测试方案。" },
   { title: "Agent 契约验收记录", slug: "19-p0-05a-delivery", summary: "当前实现、实际测试与剩余工作。" },
+  { title: "模型协作与验收记录", slug: "25-p0-05b-delivery", summary: "真实模型过程、预算、测试与当前能力边界。" },
   { title: "完整工程文档目录", slug: "index", summary: "全部规格、执行隔离、恢复与质量门禁。" },
 ];
 

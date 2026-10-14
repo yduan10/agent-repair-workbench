@@ -12,8 +12,8 @@ export const modules = {
     headline: "先验证假设，再决定改哪里。",
     description:
       "把已证实的问题与待验证的推测分开，每个判断都能追溯到对应的调用证据。",
-    unlock: "P0-05 诊断角色接通后解锁",
-    action: "预览诊断依据",
+    unlock: "CLI 模型协作与网页只读记录已接通；隔离补丁与冻结回归待 P0-06",
+    action: "查看分析记录",
     eyebrow: "诊断能力与进度",
   },
   repairs: {

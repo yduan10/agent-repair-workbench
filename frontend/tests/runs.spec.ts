@@ -137,7 +137,7 @@ test("切换选择与离页中止慢请求，不允许迟到详情覆盖", async
   await page.route(`**/api/runs/${A}`, async () => new Promise<void>(() => {}));
   await page.getByRole("button", { name: `查看运行 ${A}` }).click();
   const leaving = page.waitForEvent("requestfailed", request => request.url().endsWith(A));
-  await page.getByRole("link", { name: /诊断分析 开发中/ }).click();
+  await page.getByRole("link", { name: /诊断分析 网页只读/ }).click();
   await leaving;
   await expect(page).toHaveURL(/workspace\/diagnosis/);
 });

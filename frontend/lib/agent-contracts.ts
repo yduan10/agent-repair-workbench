@@ -3,7 +3,7 @@ export const roleIds = ["diagnosis", "repair", "verification"] as const;
 export const toolIds = ["read_evidence", "read_contract", "read_source", "check_contract", "request_reproduction"] as const;
 const jsonSchema = z.record(z.string(), z.unknown());
 const catalogSchema = z.strictObject({
-  catalog_version: z.literal(1), runtime_available: z.literal(false),
+  catalog_version: z.literal(2), cli_runtime_available: z.literal(true), web_runtime_available: z.literal(false),
   roles: z.array(z.strictObject({ id: z.enum(roleIds), allowed_tools: z.array(z.enum(toolIds)).max(5), output_schema: jsonSchema })).length(3),
   tools: z.array(z.strictObject({ name: z.enum(toolIds), request_schema: jsonSchema })).length(5),
   task_schema: jsonSchema, state_schema: jsonSchema, summary_schema: jsonSchema,

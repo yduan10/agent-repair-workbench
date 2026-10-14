@@ -10,6 +10,7 @@ Identifier = Annotated[str, Field(pattern=r"^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-
 Digest = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
 Name = Annotated[str, Field(min_length=1, max_length=128, pattern=r"^[a-zA-Z0-9_.-]+$")]
 Count = Annotated[int, Field(ge=0, le=1_000_000)]
+TokenCount = Annotated[int, Field(ge=0, le=2_000_000)]
 Role = Literal["diagnosis", "repair", "verification"]
 Intent = Literal["check_only", "diagnose", "propose_repair"]
 SourceKind = Literal["synthetic", "public_historical"]
@@ -51,7 +52,7 @@ def unique_evidence(refs: tuple[EvidenceRef, ...]) -> None:
 
 
 class Budget(Contract):
-    total_tokens: Annotated[int, Field(ge=1, le=1_000_000)]
+    total_tokens: Annotated[int, Field(ge=1, le=2_000_000)]
     output_tokens: Annotated[int, Field(ge=1, le=32768)]
     model_calls: Annotated[int, Field(ge=1, le=12)] = 12
     tool_calls: Annotated[int, Field(ge=1, le=20)] = 20
@@ -111,9 +112,9 @@ class TaskState(Contract):
 class Usage(Contract):
     model_calls: Annotated[int, Field(ge=0, le=12)] = 0
     tool_calls: Annotated[int, Field(ge=0, le=20)] = 0
-    reserved_tokens: Count = 0
-    known_input_tokens: Count = 0
-    known_output_tokens: Count = 0
+    reserved_tokens: TokenCount = 0
+    known_input_tokens: TokenCount = 0
+    known_output_tokens: TokenCount = 0
     usage_complete: bool = True
 
     @model_validator(mode="after")

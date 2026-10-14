@@ -118,6 +118,7 @@ def create_app() -> FastAPI:
             if not transferred:
                 gate.release()
 
+    from agent_workbench.analysis_store.api import router as analyses_router
     from agent_workbench.orchestration.catalog import router as contracts_router
     from agent_workbench.run_store.api import router as runs_router
     from agent_workbench.web_runs.api import router as reproductions_router
@@ -125,6 +126,7 @@ def create_app() -> FastAPI:
     app.include_router(reproductions_router)
     app.include_router(contracts_router)
     app.include_router(runs_router)
+    app.include_router(analyses_router)
     return app
 
 

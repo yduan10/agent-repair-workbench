@@ -31,6 +31,14 @@ export default function RunHistory() {
     selected.current = id; selectionVersion.current++;
     setDetail(null); setDetailError(""); setSelectedId(id);
   }, []);
+  useEffect(() => {
+    const readSelection = () => {
+      const id = new URLSearchParams(window.location.search).get("run");
+      if (id && /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(id)) select(id);
+    };
+    readSelection(); window.addEventListener("popstate", readSelection);
+    return () => window.removeEventListener("popstate", readSelection);
+  }, [select]);
   const onBegin = useCallback(() => { submitSelectionVersion.current = selectionVersion.current; }, []);
   const onAccepted = useCallback((id: string, choose: boolean) => {
     if (choose && submitSelectionVersion.current === selectionVersion.current) select(id);

@@ -8,7 +8,8 @@
     "start": "next start --hostname 127.0.0.1 --port 3010",
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
-    "test:runs-live": "python3 tests/run_live_tests.py"
+    "test:runs-live": "python3 tests/run_live_tests.py",
+    "test:analyses-live": "python3 tests/run_analysis_live_tests.py"
   },
   "dependencies": {
     "lucide-react": "1.55.0",

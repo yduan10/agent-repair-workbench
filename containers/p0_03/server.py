@@ -17,6 +17,7 @@ from typing import Any, NoReturn
 
 SCENARIOS = (
     "pass",
+    "wrong_type",
     "tool_error",
     "timeout",
     "response_lost",
@@ -101,6 +102,11 @@ def output_schema(scenario: str) -> dict[str, Any]:
         "required": required,
         "additionalProperties": False,
     }
+
+
+def lookup_result(count: int, scenario: str) -> dict[str, Any]:
+    """Fixed synthetic serialization fault; values never come from a command."""
+    return {"count": str(count) if scenario == "wrong_type" else count}
 
 
 def policy_probe() -> dict[str, Any]:
@@ -211,7 +217,7 @@ def call(identifier: Any, params: dict[str, Any], args: argparse.Namespace) -> N
             {"content": [{"type": "text", "text": "synthetic_tool_error"}], "isError": True},
         )
         return
-    result: dict[str, Any] = {"count": count}
+    result = lookup_result(count, scenario)
     if scenario == "policy_probe":
         result["policy"] = policy_probe()
     response = {

@@ -3,11 +3,15 @@
 from pathlib import Path
 from uuid import uuid4
 
+from sqlalchemy import select
+
+from agent_workbench.analysis_store.fencing import AnalysisFence
 from agent_workbench.checker import parse_json_bytes
 from agent_workbench.mcp_config import CallCase, canonical, digest
 from agent_workbench.mcp_models import MCPReport
 from agent_workbench.run_store.location import state_directory
 from agent_workbench.run_store.models import RunStatus, RunView, StoreError
+from agent_workbench.run_store.schema import analysis_execution_links
 from agent_workbench.run_store.store import RunStore
 from agent_workbench.runner.docker import DockerControl, DockerFailure
 from agent_workbench.runner.models import SandboxConfig, SandboxReport
@@ -109,16 +113,25 @@ async def reconcile_runs(store: RunStore) -> list[RunView]:
     updated = []
     for run in pending:
         web = WebRunStore(store.directory)
-        fence: OwnerFence | None = None
+        fences: list[OwnerFence | AnalysisFence] = []
         try:
             if web.is_active(run.run_id):
-                fence = OwnerFence(store.directory)
-                try:
+                fences.append(OwnerFence(store.directory))
+            with store._transaction() as connection:
+                task_id = connection.execute(
+                    select(analysis_execution_links.c.task_id).where(
+                        analysis_execution_links.c.record_id == run.run_id
+                    )
+                ).scalar_one_or_none()
+            if task_id is not None:
+                fences.append(AnalysisFence(store.directory, task_id))
+            try:
+                for fence in fences:
                     fence.acquire()
-                except StoreError as error:
-                    if error.code == "runner_busy":
-                        continue
-                    raise
+            except StoreError as error:
+                if error.code in ("runner_busy", "analysis_busy"):
+                    continue
+                raise
             resource = "unavailable"
             if control is not None and run.attempt_id is not None:
                 try:
@@ -141,7 +154,7 @@ async def reconcile_runs(store: RunStore) -> list[RunView]:
                 if error.code not in ("state_conflict", "version_conflict", "run_conflict"):
                     raise
         finally:
-            if fence is not None:
+            for fence in reversed(fences):
                 fence.close()
             web.close()
     return updated

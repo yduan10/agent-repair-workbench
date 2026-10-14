@@ -25,9 +25,18 @@ from agent_workbench.mcp_config import canonical, digest
 from agent_workbench.runner.models import SandboxConfig, SandboxReport
 
 from .models import Claim, EventView, RunDetail, RunView, StoreError
-from .schema import artifacts, attempts, events, runs, web_requests
+from .schema import (
+    analysis_events,
+    analysis_execution_links,
+    analysis_summaries,
+    artifacts,
+    attempts,
+    events,
+    runs,
+    web_requests,
+)
 
-REVISION = "0002_web_requests"
+REVISION = "0003_analyses"
 MAX_REPORT = 1_048_576
 TERMINAL = ("succeeded", "failed", "cancelled", "outcome_unknown")
 EXECUTORS = ("absent", "running", "stopped", "unavailable", "mismatch")
@@ -139,11 +148,17 @@ class RunStore:
         if allow_empty and not revisions and names == {"alembic_version"}:
             return
         supported = revisions == [(REVISION,)] or (
-            allow_empty and revisions == [("0001_run_store",)]
+            allow_empty and revisions in ([("0001_run_store",)], [("0002_web_requests",)])
         )
         if not supported or not {"runs", "attempts", "events", "artifacts"} <= names:
             raise StoreError("schema_incompatible")
-        if revisions == [(REVISION,)] and "web_requests" not in names:
+        if revisions in ([("0002_web_requests",)], [(REVISION,)]) and "web_requests" not in names:
+            raise StoreError("schema_incompatible")
+
+        if (
+            revisions == [(REVISION,)]
+            and not {"analysis_summaries", "analysis_events", "analysis_execution_links"} <= names
+        ):
             raise StoreError("schema_incompatible")
 
     @staticmethod
@@ -181,7 +196,16 @@ class RunStore:
 
     def downgrade_empty(self) -> None:
         with self._transaction(write=True) as connection:
-            for table in (runs, attempts, events, artifacts, web_requests):
+            for table in (
+                runs,
+                attempts,
+                events,
+                artifacts,
+                web_requests,
+                analysis_summaries,
+                analysis_events,
+                analysis_execution_links,
+            ):
                 if connection.execute(select(table).limit(1)).first() is not None:
                     raise StoreError("migration_not_empty")
             command.downgrade(self._migration(connection), "base")
@@ -578,6 +602,11 @@ class RunStore:
                         runs.c.status.in_(TERMINAL),
                         runs.c.executor_state == "absent",
                         runs.c.updated_at < cutoff,
+                        ~exists(
+                            select(analysis_execution_links.c.record_id).where(
+                                analysis_execution_links.c.record_id == runs.c.run_id
+                            )
+                        ),
                         ~exists(
                             select(web_requests.c.request_id).where(
                                 web_requests.c.request_id == runs.c.run_id,

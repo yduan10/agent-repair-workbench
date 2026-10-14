@@ -106,7 +106,7 @@ test("取消失败保留真实运行状态，离页只中止读取", async ({ pa
   await page.getByRole("button", { name: "请求停止运行" }).click();
   await expect(page.getByText(/停止请求结果未确认/)).toBeVisible();
   await expect(page.getByRole("region", { name: "运行详情" }).getByRole("status").first()).toHaveText("执行中");
-  await page.getByRole("link", { name: /诊断分析 开发中/ }).click();
+  await page.getByRole("link", { name: /诊断分析 网页只读/ }).click();
   expect(state.cancels).toHaveLength(1); expect(state.posts).toHaveLength(0);
 });
 

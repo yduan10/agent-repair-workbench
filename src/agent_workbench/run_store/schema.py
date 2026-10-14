@@ -59,3 +59,30 @@ web_requests = Table(
     Column("active", Integer, nullable=False),
     Column("cancel_requested", Integer, nullable=False),
 )
+
+analysis_summaries = Table(
+    "analysis_summaries",
+    metadata,
+    Column("task_id", String, primary_key=True),
+    Column("revision", Integer, nullable=False),
+    Column("summary_json", LargeBinary, nullable=False),
+    Column("sha256", String, nullable=False),
+    Column("updated_at", Float, nullable=False),
+)
+analysis_events = Table(
+    "analysis_events",
+    metadata,
+    Column("task_id", ForeignKey("analysis_summaries.task_id"), primary_key=True),
+    Column("revision", Integer, primary_key=True),
+    Column("event_json", LargeBinary, nullable=False),
+    Column("sha256", String, nullable=False),
+    Column("created_at", Float, nullable=False),
+)
+analysis_execution_links = Table(
+    "analysis_execution_links",
+    metadata,
+    Column("record_id", ForeignKey("runs.run_id"), primary_key=True),
+    Column("task_id", ForeignKey("analysis_summaries.task_id"), nullable=False),
+    Column("request_id", String, nullable=False),
+    Column("payload_sha256", String, nullable=False),
+)

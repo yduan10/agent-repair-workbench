@@ -29,6 +29,8 @@
 | [21 local document reader](21-ui-06-document-reader.md) | UI-06 站内正文、目录、主题与文档链接 | 文档阅读能力变化 |
 | [22 web reproduction](22-web-reproduction.md) | P1-01a 网页操作、持久接收、取消与测试 | 本批实现及验收变化 |
 | [23 web reproduction delivery](23-p1-01a-delivery.md) | P1-01a 实施、测试与复审记录 | 每批交付与实测结果变化 |
+| [24 P0-05b runtime](24-p0-05b-runtime.md) | 模型预算、五工具、持久分析和只读诊断页 | 当前实现边界与验收变化 |
+| [25 P0-05b delivery](25-p0-05b-delivery.md) | 本批模型实测、A矩阵、评审和剩余边界 | 本批交付与实测结果变化 |
 | reviews/ | 文档及代码评审证据 | 每次评审 |
 
 ## 冲突、版本和决策

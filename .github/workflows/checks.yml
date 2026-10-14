@@ -50,3 +50,7 @@ jobs:
         working-directory: frontend
         env:
           PLAYWRIGHT_CHANNEL: ""
+      - run: npm run test:analyses-live
+        working-directory: frontend
+        env:
+          PLAYWRIGHT_CHANNEL: ""

@@ -58,7 +58,7 @@ test("降低动效、完整迭代历史与实际能力状态", async ({ page }) 
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)).toBe("auto");
   await page.getByRole("link", { name: "开发记录", exact: true }).first().click();
   const milestones = page.locator(".milestone");
-  await expect(milestones.first()).toContainText("P1-01a");
+  await expect(milestones.first()).toContainText("P0-05b");
   for (const id of ["P0-04", "UI-03", "P0-03", "UI-02", "DOC-02", "P0-02", "UI-01", "P0-01", "DOC-01"]) {
     const completed = milestones.filter({ has: page.locator(".milestone-meta > span", { hasText: id }) });
     await expect(completed).toHaveCount(1);

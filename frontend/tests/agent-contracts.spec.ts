@@ -21,11 +21,12 @@ test("真实协作接口可按角色查看并下载，页面不执行工具", as
   const downloadPromise = page.waitForEvent("download");
   await catalog.getByRole("button", { name: "下载接口约定" }).click();
   const download = await downloadPromise;
-  expect(download.suggestedFilename()).toBe("agent-contracts-v1.json");
+  expect(download.suggestedFilename()).toBe("agent-contracts-v2.json");
   const saved = JSON.parse(await readFile((await download.path())!, "utf8"));
   const actual = await (await page.request.get("/api/agent-contracts")).json();
   expect(saved).toEqual(actual);
-  expect(saved.runtime_available).toBe(false);
+  expect(saved.cli_runtime_available).toBe(true);
+  expect(saved.web_runtime_available).toBe(false);
   expect(writes).toEqual([]);
 });
 
@@ -39,7 +40,7 @@ test("协作目录故障可重试，未知版本和提前开放标记拒绝展�
   await catalog.getByRole("button", { name: "重试读取" }).click();
   await expect(catalog.getByRole("tab", { name: "诊断角色" })).toBeVisible();
   const original = await (await page.request.get("/api/agent-contracts")).json();
-  for (const change of [{ catalog_version: 99 }, { runtime_available: true }, { roles: [original.roles[0], original.roles[0], original.roles[0]] }]) {
+  for (const change of [{ catalog_version: 99 }, { cli_runtime_available: false }, { web_runtime_available: true }, { roles: [original.roles[0], original.roles[0], original.roles[0]] }]) {
     await page.route("**/api/agent-contracts", route => route.fulfill({ json: { ...original, ...change } }));
     await page.reload();
     await expect(catalog.getByRole("alert")).toBeVisible();

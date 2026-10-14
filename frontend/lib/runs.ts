@@ -4,7 +4,7 @@ const uuid = z.string().regex(/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-
 const hash = z.string().regex(/^[a-f0-9]{64}$/);
 const count = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
 const timestamp = z.number().finite().nonnegative().max(253402300799);
-const scenario = z.enum(["pass", "tool_error", "timeout", "response_lost", "duplicate_result", "crash_before_call", "crash_during_call", "crash_before_result", "stdout_flood", "stderr_flood", "stdout_total_flood", "pid_limit", "spawn_child", "oom", "cpu_spin", "policy_probe"]);
+const scenario = z.enum(["wrong_type", "pass", "tool_error", "timeout", "response_lost", "duplicate_result", "crash_before_call", "crash_during_call", "crash_before_result", "stdout_flood", "stderr_flood", "stdout_total_flood", "pid_limit", "spawn_child", "oom", "cpu_spin", "policy_probe"]);
 const state = z.enum(["queued", "running", "succeeded", "failed", "cancelled", "outcome_unknown"]);
 export const runSchema = z.strictObject({
   run_id: uuid, attempt_id: uuid.nullable(), status: state, version: count.min(1),
@@ -29,7 +29,7 @@ export const runStatusLabels: Record<RunView["status"], string> = {
   queued: "等待执行", running: "执行中", succeeded: "成功", failed: "失败", cancelled: "已取消", outcome_unknown: "结果未知",
 };
 export const scenarioLabels: Record<z.infer<typeof scenario>, string> = {
-  pass: "正常调用", tool_error: "工具错误", timeout: "调用超时", response_lost: "响应丢失",
+  wrong_type: "输出类型不一致", pass: "正常调用", tool_error: "工具错误", timeout: "调用超时", response_lost: "响应丢失",
   duplicate_result: "重复结果", crash_before_call: "调用前崩溃", crash_during_call: "调用中崩溃",
   crash_before_result: "返回前崩溃", stdout_flood: "标准输出超限", stderr_flood: "错误输出超限",
   stdout_total_flood: "累计输出超限", pid_limit: "进程数限制", spawn_child: "子进程回收",
@@ -75,7 +75,7 @@ export class RunApiError extends Error {
 }
 const LIMIT = 1024 * 1024;
 
-export async function readJSON(url: string, signal: AbortSignal, init: { method: "POST"; body: string } | undefined = undefined): Promise<{ value: unknown; bytes: Uint8Array<ArrayBuffer> }> {
+export async function readJSON(url: string, signal: AbortSignal, init: { method: "POST"; body: string } | undefined = undefined, maxBytes = LIMIT): Promise<{ value: unknown; bytes: Uint8Array<ArrayBuffer> }> {
   const response = await fetch(url, { method: init?.method ?? "GET", ...(init ? { body: init.body, headers: { "Content-Type": "application/json" } } : {}), cache: "no-store", signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]) });
   if (!response.ok) {
     await response.body?.cancel().catch(() => {});
@@ -93,7 +93,7 @@ export async function readJSON(url: string, signal: AbortSignal, init: { method:
       const { value, done } = await reader.read();
       if (done) break;
       length += value.byteLength;
-      if (length > LIMIT) { await reader.cancel(); throw new RunApiError("返回数据超过 1 MiB 限制，未展示或下载。"); }
+      if (length > maxBytes) { await reader.cancel(); throw new RunApiError(`返回数据超过 ${maxBytes / LIMIT} MiB 限制，未展示或下载。`); }
       chunks.push(value);
     }
   } finally { reader.releaseLock(); }

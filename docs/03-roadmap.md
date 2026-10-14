@@ -28,7 +28,7 @@
 | DOC-03 | 产品闭环、Agent/tools边界与测试用例规格 | P0-04 | 本次 | done | [实施规格](17-agent-tools-testing-plan.md)、[独立文档复审](reviews/DOC-03-review.md)；8工具/26验收用例矩阵及链接核对，D01/D02修复复审；planned → ready → in_progress → in_review → done；不计Agent运行实现完成 |
 | UI-06 | 站内工程文档阅读器与排版 | UI-05 | 本次 | done | [规格](21-ui-06-document-reader.md)；planned → ready → in_progress → in_review → done；[复审](reviews/UI-06-code-review.md) |
 | UI-05 | 功能引导、文档入口、主题修复与公开源码 | P0-05a | 本次 | done | [范围与验收](20-ui-05-public-source.md)；planned → ready → in_progress → in_review → done |
-| P0-05 | M2 三角色有限循环、模型适配与预算 | P0-04 | 3–5 天 | in_progress | planned → ready → in_progress；[P0-05a已完成](19-p0-05a-delivery.md)，独立前后端复审通过；P0-05b及完整A矩阵待实现，完整里程碑未完成 |
+| P0-05 | M2 三角色有限循环、模型适配与预算 | P0-04 | 3–5 天 | done | planned → ready → in_progress → in_review → done；[P0-05a](19-p0-05a-delivery.md)、[P0-05b交付验收](25-p0-05b-delivery.md)、[独立交付复审](reviews/P0-05b-delivery-review.md)；554默认Python、28真实Docker、真实模型全流程、82主UI与独立21+1通过；建议未应用 |
 | P0-06 | M2 隔离补丁、冻结验收、基线候选比较 | P0-05 | 3–5 天 | planned | 待实现 |
 
 负责人：实现 Codex，产品验收 Yukun，质量门禁由专职 reviewer 出具证据。所有 Defect P0/P1 必须在对应任务标 done 前修复；不能用上述估计作为豁免。
@@ -180,3 +180,18 @@
 - 显式迁移到 0002，旧运行/事件/报告保真；本机先一致性备份、停写升级、逐表摘要核对，再重启 API。
 - 存储、服务/API、前端三批独立评审通过；真实四场景 Docker、隔离浏览器开始→结果→取消链路通过。具体测试计数与证据类型见[23](23-p1-01a-delivery.md)。
 - 父任务 P1-01 仍 planned，P0-05 仍 in_progress。本批完成后继续 P0-05b；模型诊断效果、自动修复成功率尚无验收结果。
+
+### P0-05b 实施记录（2026-10-14）
+
+- 用户授权进入本批；设计planned → ready → in_progress → in_review，设计独立复审已通过。模型网关、持久预算、五工具和LangGraph有限协作进入独立代码评审与实测。
+- 用户授权按官方模型上限配置现有网关；输入预算采用条件性信任，不称已验证网关强制上限。单次输出diagnosis/verification 4096、repair 8192，task默认2M预留额度不等于实际消耗。
+- 网关评审修复整请求时限与合法usage丢失；工具评审修复原生取消遗留子任务。A14真实模型及A15前端门禁完成前，父P0-05保持in_progress。
+
+
+### P0-05b 完成记录（2026-10-14）
+
+- 本批与父 P0-05 已按 in_progress → in_review → done 完成。三角色有限协作、五类受控工具、现有模型网关、持久预算与只读诊断页已接通。
+- 真实模型三次完整尝试全部保留：HTTP400未知、调用预算停止、最终 proposal_only；最后7次模型/4次工具/1份建议，14.131秒，实际输入41,644/输出1,541 tokens。不得计算为真实项目修复率。
+- 默认Python554通过/30显式跳过；另28项真实Docker通过；前端82通过/3显式live跳过，运行记录专用21通过、分析专用1通过。静态检查/类型/构建/锁及运行依赖审计通过。具体命令、重叠计数与边界见[25](25-p0-05b-delivery.md)。
+- 主库显式升级0003且原记录哈希保真；实现分批独立评审、缺陷修复复审、交付文档增量复审通过。诊断页提供真实记录、步骤、用量、证据与摘要下载，旧开发历史保留。
+- 下一项P0-06先冻结隔离候选/可信验收设计，再实现应用与回归。当前不产生candidate_verified，网页不发起模型分析；记忆系统仍属于P1-02。

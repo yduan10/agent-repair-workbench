@@ -15,6 +15,7 @@ import anyio
 SCENARIOS = frozenset(
     (
         "pass",
+        "wrong_type",
         "tool_error",
         "timeout",
         "response_lost",

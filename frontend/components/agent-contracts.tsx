@@ -35,13 +35,13 @@ export default function AgentContracts() {
     if (!catalog) return;
     const url = URL.createObjectURL(new Blob([JSON.stringify(catalog, null, 2)], { type: "application/json" }));
     const link = document.createElement("a");
-    link.href = url; link.download = "agent-contracts-v1.json"; link.click();
+    link.href = url; link.download = "agent-contracts-v2.json"; link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   return <section className="agent-contracts" aria-labelledby="agent-contracts-title">
     <div className="contracts-heading">
       <div><h2 id="agent-contracts-title">协作接口</h2><p>查看各角色的职责、权限与实际数据约定。</p></div>
-      <span className="contracts-status"><FileJson2 size={15} aria-hidden="true" />契约可查看 · 执行未接通</span>
+      <span className="contracts-status"><FileJson2 size={15} aria-hidden="true" />CLI 可运行 · 网页只读</span>
     </div>
     {error ? <div className="contracts-empty" role="alert"><p>暂时无法读取接口目录，请确认本地 API 已启动后重试。</p><button className="secondary-button" onClick={() => setRetry(value => value + 1)}>重试读取</button></div>
       : !catalog ? <p className="contracts-empty" role="status">正在读取本地接口目录…</p>

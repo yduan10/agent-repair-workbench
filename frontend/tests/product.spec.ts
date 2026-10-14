@@ -87,7 +87,6 @@ test("导入文件与断网恢复", async ({ page }) => {
 
 test("预览模块可导航、筛选与展开", async ({ page }) => {
   for (const section of [
-    "diagnosis",
     "repairs",
     "regression",
     "memory",
@@ -105,14 +104,14 @@ test("预览模块可导航、筛选与展开", async ({ page }) => {
       .click();
     await expect(page.getByRole("region", { name: "示例详情" })).toBeVisible();
   }
-  await page.goto("/workspace/diagnosis");
+  await page.goto("/workspace/repairs");
   await page.getByRole("textbox", { name: "筛选示例" }).fill("不存在");
   await expect(
     page.getByRole("heading", { name: "没有匹配的示例" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "清空筛选" }).click();
   await expect(
-    page.getByRole("button", { name: "预览诊断依据" }),
+    page.getByRole("button", { name: "预览候选补丁" }),
   ).toBeVisible();
 });
 

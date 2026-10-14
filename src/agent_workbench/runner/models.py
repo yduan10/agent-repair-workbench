@@ -9,6 +9,7 @@ from agent_workbench.models import StrictModel
 
 Scenario = Literal[
     "pass",
+    "wrong_type",
     "tool_error",
     "timeout",
     "response_lost",
