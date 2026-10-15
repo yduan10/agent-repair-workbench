@@ -177,3 +177,20 @@ web_analysis_requests = Table(
     Column("active", Integer, nullable=False),
     Column("cancel_requested", Integer, nullable=False),
 )
+
+
+# No FK: browser request tombstones remain when repair history is pruned.
+web_repair_requests = Table(
+    "web_repair_requests",
+    metadata,
+    Column("request_id", String, primary_key=True),
+    Column("payload_sha256", String, nullable=False),
+    Column("case_id", String, nullable=False),
+    Column("mode", String, nullable=False),
+    Column("policy_sha256", String, nullable=False),
+    Column("initial_sha256", String, nullable=False),
+    Column("claim_sha256", String, nullable=False),
+    Column("consumed", Integer, nullable=False),
+    Column("active", Integer, nullable=False),
+    Column("cancel_requested", Integer, nullable=False),
+)

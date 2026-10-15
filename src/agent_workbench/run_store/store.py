@@ -40,10 +40,11 @@ from .schema import (
     repair_tasks,
     runs,
     web_analysis_requests,
+    web_repair_requests,
     web_requests,
 )
 
-REVISION = "0007_web_analyses"
+REVISION = "0008_web_repairs"
 MAX_REPORT = 1_048_576
 TERMINAL = ("succeeded", "failed", "cancelled", "outcome_unknown")
 EXECUTORS = ("absent", "running", "stopped", "unavailable", "mismatch")
@@ -164,6 +165,7 @@ class RunStore:
                 [("0004_repairs",)],
                 [("0005_comparisons",)],
                 [("0006_reproductions",)],
+                [("0007_web_analyses",)],
             )
         )
         if not supported or not {"runs", "attempts", "events", "artifacts"} <= names:
@@ -176,6 +178,7 @@ class RunStore:
                 [("0004_repairs",)],
                 [("0005_comparisons",)],
                 [("0006_reproductions",)],
+                [("0007_web_analyses",)],
                 [(REVISION,)],
             )
             and "web_requests" not in names
@@ -189,6 +192,7 @@ class RunStore:
                 [("0004_repairs",)],
                 [("0005_comparisons",)],
                 [("0006_reproductions",)],
+                [("0007_web_analyses",)],
                 [(REVISION,)],
             )
             and not {"analysis_summaries", "analysis_events", "analysis_execution_links"} <= names
@@ -201,6 +205,7 @@ class RunStore:
                 [("0004_repairs",)],
                 [("0005_comparisons",)],
                 [("0006_reproductions",)],
+                [("0007_web_analyses",)],
                 [(REVISION,)],
             )
             and not {"repair_tasks", "repair_requests", "repair_candidates", "repair_events"}
@@ -209,12 +214,18 @@ class RunStore:
             raise StoreError("schema_incompatible")
 
         if (
-            revisions in ([("0005_comparisons",)], [("0006_reproductions",)], [(REVISION,)])
+            revisions
+            in (
+                [("0005_comparisons",)],
+                [("0006_reproductions",)],
+                [("0007_web_analyses",)],
+                [(REVISION,)],
+            )
             and not {"repair_comparisons", "repair_comparison_attempts"} <= names
         ):
             raise StoreError("schema_incompatible")
 
-        if revisions in ([("0006_reproductions",)], [(REVISION,)]):
+        if revisions in ([("0006_reproductions",)], [("0007_web_analyses",)], [(REVISION,)]):
             if not {"repair_reproductions", "repair_execution_identities"} <= names:
                 raise StoreError("schema_incompatible")
             from .migrations.versions.v0006 import TRIGGERS
@@ -228,7 +239,7 @@ class RunStore:
             if any(actual.get(name) != sql for name, sql in TRIGGERS.items()):
                 raise StoreError("schema_incompatible")
 
-        if revisions == [(REVISION,)]:
+        if revisions in ([("0007_web_analyses",)], [(REVISION,)]):
             if "web_analysis_requests" not in names:
                 raise StoreError("schema_incompatible")
             from .migrations.versions.v0007 import INDEX_SQL
@@ -237,6 +248,27 @@ class RunStore:
                 "SELECT sql FROM sqlite_master WHERE type='index' AND name='ux_web_analysis_active'"
             ).scalar()
             if index != INDEX_SQL:
+                raise StoreError("schema_incompatible")
+
+        if revisions == [(REVISION,)]:
+            if "web_repair_requests" not in names:
+                raise StoreError("schema_incompatible")
+            from .migrations.versions.v0008 import INDEX_SQL as REPAIR_INDEX_SQL
+
+            index = connection.exec_driver_sql(
+                "SELECT sql FROM sqlite_master WHERE type='index' AND name='ux_web_repair_active'"
+            ).scalar()
+            if index != REPAIR_INDEX_SQL:
+                raise StoreError("schema_incompatible")
+            from .migrations.versions.v0008 import TRIGGERS as REPAIR_TRIGGERS
+
+            actual = {
+                row[0]: row[1]
+                for row in connection.exec_driver_sql(
+                    "SELECT name, sql FROM sqlite_master WHERE type='trigger'"
+                )
+            }
+            if any(actual.get(name) != sql for name, sql in REPAIR_TRIGGERS.items()):
                 raise StoreError("schema_incompatible")
 
     @staticmethod
@@ -281,6 +313,7 @@ class RunStore:
                 artifacts,
                 web_requests,
                 web_analysis_requests,
+                web_repair_requests,
                 analysis_summaries,
                 analysis_events,
                 analysis_execution_links,

@@ -361,6 +361,12 @@ class RepairStore:
             return sorted(records.values(), key=lambda c: c.sequence)
 
     def create_task(self, task: RepairTask, *, fence: RepairFence) -> Mutation:
+        with self._base._transaction(write=True) as connection:
+            return self._create_task(connection, task, fence=fence)
+
+    def _create_task(
+        self, connection: Connection, task: RepairTask, *, fence: RepairFence
+    ) -> Mutation:
         task = _validated(RepairTask, task)
         fence.require(self.directory, task.task_id)
         if (
@@ -371,22 +377,21 @@ class RepairStore:
             or task.error_code
         ):
             raise StoreError("invalid_repair_input")
-        with self._base._transaction(write=True) as connection:
-            if connection.execute(
-                select(repair_tasks.c.task_id).where(repair_tasks.c.task_id == task.task_id)
-            ).first():
-                raise StoreError("repair_id_conflict")
-            if task.source_analysis_id:
-                AnalysisStore(self.directory)._get(connection, task.source_analysis_id)
-            self._put(connection, repair_tasks, task, {"task_id": task.task_id, "revision": 0})
-            event = RepairEvent(
-                task_id=task.task_id,
-                revision=0,
-                kind="created",
-                task_sha256=digest(_bytes(task)),
-                at=task.started_at,
-            )
-            self._put(connection, repair_events, event, {"task_id": task.task_id, "revision": 0})
+        if connection.execute(
+            select(repair_tasks.c.task_id).where(repair_tasks.c.task_id == task.task_id)
+        ).first():
+            raise StoreError("repair_id_conflict")
+        if task.source_analysis_id:
+            AnalysisStore(self.directory)._get(connection, task.source_analysis_id)
+        self._put(connection, repair_tasks, task, {"task_id": task.task_id, "revision": 0})
+        event = RepairEvent(
+            task_id=task.task_id,
+            revision=0,
+            kind="created",
+            task_sha256=digest(_bytes(task)),
+            at=task.started_at,
+        )
+        self._put(connection, repair_events, event, {"task_id": task.task_id, "revision": 0})
         return Mutation(task, digest(_bytes(task)))
 
     @staticmethod
@@ -836,22 +841,43 @@ class RepairStore:
         fence: RepairFence,
         error_code: ErrorCode | None = None,
     ) -> Mutation:
+        with self._base._transaction(write=True) as connection:
+            return self._finish_task(
+                connection,
+                task_id,
+                outcome,
+                expected_revision=expected_revision,
+                expected_sha256=expected_sha256,
+                fence=fence,
+                error_code=error_code,
+            )
+
+    def _finish_task(
+        self,
+        connection: Connection,
+        task_id: str,
+        outcome: Outcome,
+        *,
+        expected_revision: int,
+        expected_sha256: str,
+        fence: RepairFence,
+        error_code: ErrorCode | None = None,
+    ) -> Mutation:
         if outcome == "candidate_verified":
             raise StoreError("invalid_repair_input")
         fence.require(self.directory, _uuid(task_id))
-        with self._base._transaction(write=True) as connection:
-            task, _, _ = self._read(connection, task_id)
-            self._cas(task, expected_revision, expected_sha256)
-            if task.phase != "ready":
-                raise StoreError("request_pending")
-            new = _new(
-                task,
-                phase="finished",
-                outcome=outcome,
-                error_code=error_code,
-                finished_at=self._now(),
-            )
-            return self._commit(connection, task, new, "finished")
+        task, _, _ = self._read(connection, task_id)
+        self._cas(task, expected_revision, expected_sha256)
+        if task.phase != "ready":
+            raise StoreError("request_pending")
+        new = _new(
+            task,
+            phase="finished",
+            outcome=outcome,
+            error_code=error_code,
+            finished_at=self._now(),
+        )
+        return self._commit(connection, task, new, "finished")
 
     def reconcile(self, task_id: str, *, expected_revision: int, expected_sha256: str) -> Mutation:
         with RepairFence(self.directory, _uuid(task_id)):

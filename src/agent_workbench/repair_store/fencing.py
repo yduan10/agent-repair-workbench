@@ -2,7 +2,10 @@
 
 import os
 import stat
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
+from threading import RLock
 
 from agent_workbench.run_store.models import StoreError
 from agent_workbench.run_store.store import _uuid
@@ -17,10 +20,16 @@ class RepairFence:
     def __init__(self, directory: Path, task_id: str) -> None:
         self.directory = directory.absolute()
         self.task_id = _uuid(task_id)
+        self._mutex = RLock()
+        self._guard_depth = 0
         self._fd: int | None = None
         self._pid: int | None = None
 
     def acquire(self) -> None:
+        with self._mutex:
+            self._acquire()
+
+    def _acquire(self) -> None:
         if fcntl is None:
             raise StoreError("locking_unavailable")
         if self._fd is not None:
@@ -56,7 +65,29 @@ class RepairFence:
         ):
             raise StoreError("owner_lock_required")
 
+    @contextmanager
+    def guard(self, directory: Path, task_id: str) -> Iterator[None]:
+        # Reject fork-inherited ownership before touching an inherited mutex.
+        self.require(directory, task_id)
+        with self._mutex:
+            self.require(directory, task_id)
+            self._guard_depth += 1
+            try:
+                yield
+                self.require(directory, task_id)
+            finally:
+                self._guard_depth -= 1
+
     def close(self) -> None:
+        if self._pid is not None and self._pid != os.getpid():
+            self._close()
+            return
+        with self._mutex:
+            if self._guard_depth:
+                raise StoreError("owner_lock_required")
+            self._close()
+
+    def _close(self) -> None:
         if self._fd is not None:
             os.close(self._fd)
             self._fd = None

@@ -244,14 +244,35 @@ def test_cooperative_cancel_reaps_real_child(tmp_path, monkeypatch):
     monkeypatch.setattr(stdio, "_create_platform_compatible_process", observed)
 
     async def scenario():
+        from mcp import ClientSession
+
+        dispatched = anyio.Event()
+        original_call = ClientSession.call_tool
         result = None
-        with anyio.move_on_after(1.5):
+
+        async def observed_call(self, *args, **kwargs):
+            # Adapter marks sent before entering the SDK. Synchronize at this
+            # boundary instead of assuming subprocess startup takes <1.5s.
+            dispatched.set()
+            return await original_call(self, *args, **kwargs)
+
+        monkeypatch.setattr(ClientSession, "call_tool", observed_call)
+
+        async def execute_and_collect():
+            nonlocal result
             result = await run_mcp(b'{"profile":"contract-fixture","scenario":"timeout"}', CASE)
+
+        with anyio.fail_after(10):
+            async with anyio.create_task_group() as group:
+                group.start_soon(execute_and_collect)
+                await dispatched.wait()
+                group.cancel_scope.cancel()
         return result
 
     report = anyio.run(scenario)
     assert report is not None and report.adapter_outcome == "outcome_unknown"
     assert report.preflight_findings[0].code == "run_cancelled"
+    assert pids
     for pid in pids:
         with pytest.raises(ProcessLookupError):
             os.kill(pid, 0)
