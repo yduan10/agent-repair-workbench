@@ -14,6 +14,7 @@ from agent_workbench import __version__
 from agent_workbench.checker import MAX_BYTES
 from agent_workbench.cli import run_check
 from agent_workbench.run_store.location import state_directory
+from agent_workbench.web_analyses.service import AnalysisService
 from agent_workbench.web_runs.service import ReproductionService
 
 
@@ -39,12 +40,14 @@ def create_app() -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.gate = asyncio.Semaphore(1)
+        app.state.repair_reads = asyncio.Semaphore(2)
         app.state.workers = set()
         app.state.reproductions = ReproductionService(state_directory())
+        app.state.analysis_runs = AnalysisService(state_directory())
         try:
             yield
         finally:
-            await app.state.reproductions.close()
+            await asyncio.gather(app.state.reproductions.close(), app.state.analysis_runs.close())
             if app.state.workers:
                 await asyncio.gather(*app.state.workers, return_exceptions=True)
 
@@ -120,9 +123,13 @@ def create_app() -> FastAPI:
 
     from agent_workbench.analysis_store.api import router as analyses_router
     from agent_workbench.orchestration.catalog import router as contracts_router
+    from agent_workbench.repair_reader.api import router as repairs_router
     from agent_workbench.run_store.api import router as runs_router
+    from agent_workbench.web_analyses.api import router as analysis_runs_router
     from agent_workbench.web_runs.api import router as reproductions_router
 
+    app.include_router(repairs_router)
+    app.include_router(analysis_runs_router)
     app.include_router(reproductions_router)
     app.include_router(contracts_router)
     app.include_router(runs_router)

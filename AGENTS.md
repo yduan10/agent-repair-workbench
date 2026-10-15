@@ -35,5 +35,6 @@
 
 ## 前端能力同步门禁
 
-- 每次能力变化同步 `frontend/lib/capabilities.ts`、模块实际入口、迭代历史与台账；侧栏/首页/模块头部使用统一目录，禁止按非workbench一律标预览。
-- 明确区分网页可用、CLI可用、待接通和待开发；项目开发测试结果不得显示为用户项目运行记录。详见 `docs/13-ui-progress.md`。
+- 每次能力变化同步 `frontend/lib/capabilities.ts`、模块实际入口、`frontend/lib/milestones.ts`（更新记录）与台账。
+- 产品界面只用四种用户状态：网页可用 / 网页只读 / CLI 可用 / 待开发；不得把只读或 CLI 能力标成网页可用，不得把合成示例或项目开发测试结果显示为用户项目运行记录。
+- 里程碑编号、评审、验收与测试数量只写在 docs，不出现在产品界面（UI-08 起）。更新记录面向用户描述可感知的变化。详见 `docs/13-ui-progress.md` 与 `docs/32-ui-08-product-redesign.md`。

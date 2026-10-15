@@ -1,0 +1,100 @@
+/* UI-08: overview page. */
+.overview-env {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+.overview-env-item {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 14px 16px;
+  border-left: 1px solid var(--border);
+}
+.overview-env-item:first-child {
+  border-left: 0;
+}
+.overview-env-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+}
+.overview-env-item strong {
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+.overview-env-item p {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+}
+.overview-start {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+.overview-start-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 12px;
+  padding: 16px;
+  border-left: 1px solid var(--border);
+  color: var(--text);
+  transition: background-color 0.12s;
+}
+.overview-start-item:first-child {
+  border-left: 0;
+}
+.overview-start-item:hover {
+  background: var(--surface-hover);
+}
+.overview-start-item > svg:first-child {
+  margin-top: 2px;
+  color: var(--accent-text);
+}
+.overview-start-item > svg:last-child {
+  margin-top: 3px;
+  color: var(--text-3);
+  transition: transform 0.15s var(--ease-out), color 0.15s;
+}
+.overview-start-item:hover > svg:last-child {
+  color: var(--text);
+  transform: translateX(2px);
+}
+.overview-start-item strong {
+  display: block;
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+.overview-start-item span span {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.table-scroll {
+  overflow-x: auto;
+}
+@media (max-width: 900px) {
+  .overview-start {
+    grid-template-columns: 1fr;
+  }
+  .overview-start-item {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+  .overview-start-item:first-child {
+    border-top: 0;
+  }
+  .overview-env-item {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+  .overview-env-item:first-child {
+    border-top: 0;
+  }
+}

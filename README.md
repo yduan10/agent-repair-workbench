@@ -1,213 +1,128 @@
 # Agent 修复台
 
-面向 Agent / MCP 工具开发者的工具调用测试与修复工作台。英文仓库名为 `agent-repair-workbench`，Python 包和 CLI 名称保持 `agent-workbench`。
+**给 Agent 和 MCP 工具开发者的本地工作台：找出一次工具调用哪里出错，追踪诊断依据，并审阅受约束的修复建议。**
 
-项目先实现可复现的工具调用失败、可核对的证据和固定验收，再引入受约束的诊断、修复、验证 Agent。功能完成情况以迭代台账为准，架构中的组件不代表已经实现。
+当工具改了输入输出格式，Agent 可能仍说“调用成功”，下游却已经拿到错误数据；遇到超时，又不确定工具是否执行过。Agent 修复台把**调用证据、程序检查、模型分析和实际运行记录**关联起来，帮助你从“看起来不对”走到可核对的问题定位。
 
-## 开发入口
+当前可以导入自己的调用证据做检查，也能在审核过的案例上运行 MCP / Docker 复现和模型分析。固定审核案例已能通过 CLI 生成隔离候选，并用冻结检查比较修复前后行为；支持返回类型错误和计数值偏移两个内置案例，尚未支持任意项目修复或自动写回你的代码。
 
-1. [文档索引与变更规则](docs/README.md)
-2. [产品范围与工程约束](docs/01-constraints.md)
-3. [架构与技术决策](docs/02-architecture.md)
-4. [优先级与迭代台账](docs/03-roadmap.md)
-5. [测试、评估与独立评审](docs/04-quality-gates.md)
-6. [P0-01 输入输出契约](docs/05-contract-checker.md)
-7. [产品 Agent 目录与新增角色维护指南](docs/09-agent-modules.md)
-8. [产品闭环、Agent、工具与测试实施规格](docs/17-agent-tools-testing-plan.md)
-9. [P0-05a 角色契约与实际验收](docs/19-p0-05a-delivery.md)
+[立即体验](#运行第一个检查) · [打开网页](#在网页里查看什么) · [开发与运行指南](docs/27-local-development-guide.md) · [当前进度](docs/03-roadmap.md)
 
-仓库：https://github.com/yduan10/agent-repair-workbench
+## 一个具体例子
 
-本地启动后访问 `/docs` 阅读上手与测试说明。当前公开的是开发中的源码快照，CLI 模型协作与网页分析记录已接通；实际补丁应用和冻结回归仍待 P0-06。当前未附项目开源许可证，公开可见不代表已授予通用开源许可；第三方依赖按各自许可证使用。
+你维护一个 `lookup` 工具，约定返回 `count: integer`，一次调用却返回了 `{"count": "2"}`。
 
-## 本地运行（macOS / Linux，Python 3.12）
+| 你提供的内容 | 工作台给出的结果 |
+|---|---|
+| 工具的输入、输出 JSON Schema | 核对调用参数与返回值是否符合约定 |
+| 调用参数、结果和关联 ID | 定位到 `/result/structured_content/count`，报告 `output_schema_violation` |
+| 审核案例中的源码与执行配置 | 供诊断角色取证、修复角色提出局部建议、验证角色核对证据；可关联实际隔离运行 |
+
+这个例子随仓库提供，可以立即执行。它是**明确标注的合成故障**，用于演示类型错误，不是来自真实用户的修复案例。将记录里的 `"2"` 改成 `2` 只能让这份证据通过检查，不能证明工具代码已经修好。
+
+## 运行第一个检查
+
+需要 **macOS / Linux、Python 3.12 和 uv**。首次安装依赖需要联网，之后这一步离线执行；无需模型 API key、Node 或 Docker。
 
 ```sh
+git clone https://github.com/ykduan0916/agent-repair-workbench.git
+cd agent-repair-workbench
 uv sync --frozen
-uv run --frozen agent-workbench check examples/passing.json
 uv run --frozen agent-workbench check examples/failing.json
 ```
 
-第一条检查退出 0；第二条预期退出 1。检查无法完成退出 2。默认限时 5 秒，可用 `--timeout 10` 修改；报告打印到 stdout。`examples` 是合成证据，首版不执行工具或模型。
+命令预期退出 **1**，表示发现契约错误。输出为 JSON，关键字段如下：
 
-```sh
-uv run --frozen ruff check .
-uv run --frozen ruff format --check .
-uv run --frozen mypy
-uv run --frozen pytest
+```json
+{
+  "status": "failed",
+  "checks": { "input": "passed", "output": "failed" },
+  "findings": [{
+    "code": "output_schema_violation",
+    "phase": "output",
+    "instance_path": "/result/structured_content/count",
+    "schema_path": "/properties/count/type"
+  }]
+}
 ```
 
-原始 trace 和 `.env` 不提交。分享报告前核对字段路径是否含敏感信息；摘要哈希不是匿名化保证。CLI 不支持 Windows 文件打开语义，Windows 移植需独立验收。
+再运行 `uv run --frozen agent-workbench check examples/passing.json`，应返回 `passed`、退出 **0**。检查无法完成则退出 **2**。可以参照 [示例 JSON](examples/failing.json) 整理自己的调用证据，或从网页导入；报告保留规则、路径和摘要，不复制原始参数与结果值。
 
-## 产品网页
+## 在网页里查看什么
 
-在项目根目录启动本地 API：
+按 [网页启动步骤](docs/27-local-development-guide.md#启动网页) 启动本机 API 与前端，访问 <http://127.0.0.1:3010>。
 
-```sh
-uv run --frozen uvicorn agent_workbench.api:app --host 127.0.0.1 --port 8030 --no-access-log
-```
-
-另开终端启动前端（Node 24）：
-
-```sh
-cd frontend
-npm ci
-NEXT_TELEMETRY_DISABLED=1 npm run build
-NEXT_TELEMETRY_DISABLED=1 npm run start
-```
-
-访问 <http://127.0.0.1:3010>。产品首页和七个功能入口已设计；调用检查真实可用，任务总览支持固定场景复现、停止请求、运行记录、校验报告与复现命令；诊断、修复、回归、记忆和接入按模块标注实际能力。侧栏区分网页可用、CLI可用、待接通与待开发；每个模块首屏展示已完成基础、当前使用入口和后续依赖。全站支持浅色、深色及跟随系统，主题偏好仅保存在本机；[迭代历史](http://127.0.0.1:3010/updates) 保留各阶段的改进和边界。
-
-### 前端测试
-
-在 frontend 目录运行：
-
-```sh
-npm run typecheck
-npx playwright install chromium
-NEXT_TELEMETRY_DISABLED=1 npm run test:e2e
-```
-
-测试需要先 production build；Playwright 自动启动未运行的本地服务。已有服务时复用，开发者应先重启到最新构建。本机 Chromium 下载慢时可用已安装的 Chrome：`PLAYWRIGHT_CHANNEL=chrome npm run test:e2e`；CI 使用锁定 Playwright 对应 Chromium。额外运行 `npm run test:runs-live` 可在独立临时数据库与 8031/3011 服务验证运行记录；该命令会按测试端口重新构建，之后启动产品前须用默认环境再次 `npm run build`。CI 已配置这项门禁，本地默认使用 Chrome，CI 通过 `PLAYWRIGHT_CHANNEL=''` 使用安装的 Chromium。浏览器测试包含真实 Python API、数字/BOM保真、错误恢复、预览交互、手机和桌面 axe 检查；并非全用 mock。
-
-[产品界面规格](docs/07-web-workbench.md) · [P0-02 接入设计与测试计划](docs/08-mcp-integration.md)
-
-
-## 真实 MCP CLI（P0-02）
-
-```sh
-uv run --frozen agent-workbench mcp-check --server-config examples/mcp/pass-server.json --case examples/mcp/lookup-case.json
-uv run --frozen agent-workbench mcp-check --server-config examples/mcp/failing-server.json --case examples/mcp/lookup-case.json
-```
-
-上述使用项目已审核的真实 stdio fixture，预期分别退出 0/1。输入参数失败不会调用工具，调用后超时/断连记录 outcome_unknown，不自动重试。配置不能传入任意 command/args/env；本阶段尚非任意代码沙箱。
-
-公开案例的准备、只读核验和来源见 [实验说明](experiments/public_mcp_case/README.md)。显式准备后：
-
-```sh
-uv run --frozen agent-workbench mcp-check --server-config examples/mcp/public-server.json --case examples/mcp/public-case.json
-AWB_PUBLIC_CASE=1 uv run --frozen pytest -m public_case
-```
-
-公开历史错误的预期 CLI 退出码是 1。MCP 报告只保存版本、摘要与问题路径，标明 SDK 规范化数据和原始 wire 未检查；网页接入能力仍按台账逐项解锁。
-
-## 受控容器执行（P0-03）
-
-前提：本机 Linux Docker daemon（macOS 可用现有 Colima）、固定基础镜像已明确准备。
-仅运行项目审核过的合成故障服务；网页任务总览可发起下述四种固定场景，不接受用户上传的命令或代码。
-
-```sh
-uv run --frozen python containers/p0_03/prepare.py
-uv run --frozen agent-workbench sandbox-check --server-config examples/sandbox/pass-server.json --case examples/mcp/lookup-case.json
-uv run --frozen agent-workbench sandbox-check --server-config examples/sandbox/lost-response-server.json --case examples/mcp/lookup-case.json
-```
-
-正常检查预期退出 0；响应丢失预期退出 2/outcome_unknown，不能自动重试。
-容器默认断网、非 root、只读根、0.5 CPU、128MiB 内存、32 个进程、16MiB tmpfs；
-无宿主挂载或凭据继承，Docker 日志关闭。原始帧在解码前受字节限制；
-报告只保留摘要、错误码、计数和清理确认。运行配置/镜像源码变化需重新显式准备。
-镜像取自本次构建 iidfile 并按完整 ID 执行，运行不会自动下载或构建。
-
-正常取消执行精确清理；宿主被 SIGKILL 时容器独立监护按 lifetime 停止（默认45秒，依赖正常内核调度）。
-这时没有最终报告；停止容器的元数据可能残留，按已知 run ID 显式检查/清理：
-
-```sh
-uv run --frozen agent-workbench sandbox-reap --run-id <UUID>
-uv run --frozen agent-workbench sandbox-reap --run-id <UUID> --apply
-```
-
-只处理名称/项目标签/run ID 一致的停止容器；不会删除活跃目标。
-P0-04 已增加持久运行记录；恢复对账通过下述显式命令进行，不会自动重投工具调用。
-
-```sh
-# 默认门禁：没有Docker也可跑；容器测试显示skip，不计容器验收通过
-uv run --frozen pytest
-# 本机显式准备两类实验后，完整门禁（含真实历史案例与容器故障）
-AWB_PUBLIC_CASE=1 AWB_DOCKER_TESTS=1 uv run --frozen pytest
-```
-
-[执行规格与故障矩阵](docs/11-controlled-execution.md) · [镜像准备与故障服务](containers/p0_03/README.md)
-
-
-## 运行记录与恢复（P0-04）
-
-`sandbox-check` 现在先保存执行租约，再启动容器；终态、事件、报告在同一事务提交。
-CLI 报告 `record_id` 是持久运行 ID，原 `run_id` 是容器 attempt ID。
-本地默认目录 `artifacts/run-store`，可通过 `AWB_STATE_DIR` 为 CLI 和 API 配置同一个独立目录。
-不保存原始参数/结果，报告摘要不代表匿名化。网页 `/workspace/tasks` 使用这个目录，支持发起固定场景、请求停止、查看记录与校验报告。
-
-```sh
-uv run --frozen agent-workbench runs init
-uv run --frozen agent-workbench runs list
-uv run --frozen agent-workbench runs show <record_id>
-uv run --frozen agent-workbench runs report <record_id>
-uv run --frozen agent-workbench runs reconcile
-uv run --frozen agent-workbench runs prune --days 30
-uv run --frozen agent-workbench runs prune --days 30 --apply
-```
-
-读取命令不创建库。`reconcile` 只检查过期执行与未确认资源，无法确认完成的调用保持
-`outcome_unknown`，不执行重试；恢复事件不能补造缺失的原始报告。
-`prune` 默认只预览，只有超期终态、资源确认不存在且报告有效的记录可清理。
-没有可靠报告的崩溃记录保留待人工调查。资源清理使用 `sandbox-reap --run-id <attempt_id>`。
-
-迁移当前版本 `0003_analyses`；已有 `0001_run_store` 或 `0002_web_requests` 需停止写入、备份后显式运行 `runs init` 升级，GET 不自动迁移。含数据时禁止降级；活动数据库备份必须使用 SQLite
-`Connection.backup()`，不能只复制主数据库而漏掉 WAL。先停止 CLI/API 写入再切换恢复目录；
-通过 `AWB_STATE_DIR` 指向恢复副本，执行 `runs list/show/report` 核对记录与摘要后再使用。
-备份与恢复的可执行演练见 `tests/test_run_store.py::test_live_wal_backup_refused_downgrade_and_restore`。
-完整契约、限制与验收见 [P0-04 说明](docs/14-run-store.md)。
-
-## 协作接口目录（P0-05a）
-
-工具接入与诊断页可通过本机`GET /api/agent-contracts`查看、下载三个角色及五类工具请求的实际JSON schema。目录 catalog_version=2，`cli_runtime_available=true`、`web_runtime_available=false`；CLI 模型循环、五类工具 handler 和分析摘要存储已接通，网页不发起模型调用。详见[冻结规格](docs/18-p0-05a-contracts.md)与[验收记录](docs/19-p0-05a-delivery.md)。
-
-## 网页受控复现（P1-01a）
-
-1. 按上文显式准备 Docker 固定镜像，执行 `uv run --frozen agent-workbench runs init`。
-2. 启动 API 和前端，进入 `/workspace/tasks`，选择正常调用、工具错误、调用超时或响应丢失。
-3. 点击“开始复现”，查看真实状态事件与核验报告。正常调用应通过，工具错误应失败，发送后的超时/响应丢失应为结果未知。
-4. “请求停止运行”只表示提交取消请求，实际终态与资源回收以报告为准。离页不会取消任务，断线后只查询同一请求。
-5. 展开“在终端运行此场景”，下载配置并放到项目根目录，复制命令进行同场景新运行。它不是嵌入宿主 Shell，也不承诺重放旧记录的完整环境。
-
-当前是本机单用户、单个网页执行槽。旧请求重放不重复执行；数据库清理后的旧请求 ID 返回 410。进程异常后按上文显式 `runs reconcile`，不自动重跑不明状态的操作。
-前端使用默认 3010、API 8030；更换前端端口时，API 启动前须指定 `AWB_FRONTEND_PORT`，只允许该端口的本机 Origin。`AWB_API_PORT` 配置 Next 构建代理目标。
-
-P1-01a 验证的是受控合成故障的真实执行；不能从这些结果计算 Agent 修复成功率。后续 CLI 模型协作见下面 P0-05b；实际补丁应用和候选验收仍待 P0-06。
-[实现契约与测试矩阵](docs/22-web-reproduction.md) · [验收记录](docs/23-p1-01a-delivery.md)
-
-## 有界 Agent 分析（P0-05b）
-
-本批已通过工程验收、一次真实模型完整协作与独立代码复审。CLI发起、网页 `/workspace/diagnosis` 只读分析结果；工具只允许项目审核的合成案例。`proposal_only` 是未应用、未执行验证的源码片段建议，不能当作已修复。
-
-先显式初始化/升级本地记录（已有数据先备份；0003兼容已有运行记录）：
-
-```sh
-uv run --frozen agent-workbench runs init
-uv run --frozen agent-workbench analyze --case output_mismatch --intent check_only
-uv run --frozen agent-workbench analyses list
-```
-
-`check_only` 不读取模型凭据、模型调用为0。模型分析使用现有兼容接口，环境配置：
-
-| 环境变量 | 用途 |
+| 页面 | 当前能做什么 |
 |---|---|
-| AWB_MODEL_BASE_URL | 自己授权的现有网关地址（可带 `/v1`） |
-| AWB_MODEL_NAME | 审核profile支持 `deepseek-flash` / `deepseek-v4-1-flash` / `deepseek-v4-1-flash-260910` |
-| AWB_MODEL_API_KEY | 仅进程环境提供；禁止写入源码、命令参数或截图 |
-| AWB_MODEL_LIMIT_PROFILE | 显式配置 `deepseek-v4.1-flash-1m-v1`，表示接受官方上界到自己网关的条件性映射 |
+| **总览** `/workspace` | 本机环境状态、最近的复现／分析／修复记录、快速开始入口 |
+| **调用检查** `/workbench` | 导入或编辑自己的 JSON 调用证据，查看问题路径、检查结果，下载报告 |
+| **复现** `/workspace/tasks` | 在本机运行正常调用、工具错误、调用超时、响应丢失四种内置场景；请求停止，查看真实事件与核验报告 |
+| **分析** `/workspace/diagnosis` | 选择案例和目标，开始／停止分析；查看执行控制台、角色结论、具体证据、用量和关联运行 |
+| **修复** `/workspace/repairs` | 网页只读：查看 CLI 保存的修复记录，在「代码差异」「回归结果」两个标签中审阅补丁与基线／候选逐项对照；版本失配时撤回通过显示 |
+| **环境与接入** `/workspace/connections` | 网页只读：本机服务、Docker 与模型配置状态；角色与工具接口约定；常用 CLI 命令 |
 
-不配置变量则不会请求模型；不下载或替换模型。真实分析向该网关发送审核合成证据、角色提示词和已授权四行源码片段，不发环境变量或本机其他文件。
+复现和分析可从网页或 CLI 发起，网页不接受任意 Shell 命令。修复只能从 CLI 发起，支持两个内置案例（返回类型错误、计数值偏移），网页只读取结果；项目记忆仍待实现。旧地址 `/workspace/regression` 会跳到修复页的「回归结果」标签。首次打开没有历史记录时，会提示实际启动方式，不填入虚构任务。
 
-```sh
-uv run --frozen agent-workbench analyze --case output_mismatch --intent diagnose
-uv run --frozen agent-workbench analyze --case output_mismatch --intent propose_repair
-uv run --frozen agent-workbench analyses show <task-uuid>
-# 中断后只对账并标记未知，不继续图或重发调用
-uv run --frozen agent-workbench analyses reconcile <task-uuid>
+想体验模型分析，继续看 [模型配置与 CLI 命令](docs/27-local-development-guide.md#模型分析与配置)。当前支持 `output_mismatch` 与 `passing` 两个审核案例，使用已有 DeepSeek 兼容接口，不下载新模型。
+
+## Agent 做什么，程序负责什么
+
+分析工作流的三个角色共享受控工具与预算，各自有独立的职责和输出契约：
+
+| 角色 | 当前职责 | 输出的含义 |
+|---|---|---|
+| 诊断 | 读取证据、契约和授权源码，按需申请检查或复现 | 有证据引用的假设，或明确说明证据不足 |
+| 修复建议 | 在授权源码范围内提出局部修改建议 | `proposal_only`：尚未应用的建议 |
+| 验证 | 核对重新组装的注册证据与候选元数据 | 证据已核对或仍有缺口；建议正文未交给该角色，尚未执行 |
+
+固定案例的 P0-06 修复工作流进一步允许修复角色申请 T06 隔离应用、验证角色申请 T07 独立比较；宿主程序判定是否通过，人工接受仍未开放。单角色模式拥有相同工具集合与总预算，作为对照。
+
+**执行权限、预算、最终状态和检查结果由程序控制。** 模型不能扩充自己的权限、改验收标准或直接宣布“修复成功”。调用前先持久预留预算；超时或用量未知时保留未知状态，不自动重发。中断后显式对账，不恢复重放模型调用。
+
+两个固定案例已完成同模型、工具与预算的12次对照实验：单角色5/6、三角色6/6；三角色消耗和平均耗时更高。样本小且来自同一合成服务，不能得出通用修复率、多角色优势或商业使用效果结论。
+
+## 架构与技术栈
+
+```text
+本地网页 / CLI
+      │
+      ├─ 调用检查 ── JSON Schema 检查器 ── 问题路径与报告
+      │
+      └─ 网页 / CLI 分析 ── LangGraph 有限协作 ── 诊断 / 建议 / 验证
+                           │
+                     受控工具与预算
+                      ├─ 证据 / 契约 / 授权源码
+                      └─ MCP stdio / Docker 隔离复现
+                           │
+                  SQLite 摘要、事件与运行记录
+                           │
+                       网页操作、查看与停止
 ```
 
-需要T05实际复现时，须先按上面的容器步骤显式准备镜像。默认task总额度2,000,000（保守调用前预留）；单次输出诊断/验证4,096、修复8,192，最多12次模型/20次工具/2份建议/600秒。合法usage按实际结算；缺失或不合法usage保留预留并停止，费用始终未知。通过 `--total-tokens`、`--output-tokens`、`--model-calls`、`--tool-calls`、`--timeout` 收紧；预算小于provider完整上界时真实请求会拒发。
+- **后端与编排**：Python 3.12、FastAPI、LangGraph、Pydantic；模型通过现有兼容网关接入。
+- **工具与执行**：官方 MCP Python SDK、项目自研权限和证据校验、Docker 受控执行与进程回收。
+- **状态**：SQLite、SQLAlchemy、Alembic；事务、版本校验和进程锁防止重复授权与晚到覆盖。
+- **前端与验证**：Next.js / React / TypeScript，pytest、Playwright、axe 与独立代码评审。
 
-**测试顺序**：先跑 `uv run pytest tests/agents tests/test_analysis_store.py tests/test_controlled_resources.py tests/test_controlled_runtime.py`；再显式 `AWB_TOOL_DOCKER=1 uv run pytest tests/test_controlled_tools_docker.py`；最后配置自己的现有接口执行上述analyze并检查网页。fake测试只验证工程规则，真实模型结果单独记录，不等同修复成功率。
+完整组件边界和技术取舍见 [架构文档](docs/02-architecture.md)。当前面向可信本机单用户，不是任意仓库自主修复服务或多租户平台。
 
-实际模型运行、工程测试、独立评审与能力边界见 [P0-05b 交付验收](docs/25-p0-05b-delivery.md)。真实 SQLite/API/浏览器门禁：`cd frontend && npm run test:analyses-live`（独立临时数据库，不调用模型）。
+## 当前进度
+
+**模型协作与可追溯分析已完成，正在推进实际修复闭环。**
+
+- **已完成（P0-05b）**：契约检查、真实 MCP 接入、受控容器复现、运行记录与恢复、三角色有限协作、持久预算、网页分析记录。一次真实模型完整协作得到 `proposal_only`；前两次未完成尝试也保留在 [验收记录](docs/25-p0-05b-delivery.md) 中。
+- **网页执行（P1-01b）**：分析页和复现页已接通开始、停止与执行事件，证据可以打开查看具体问题；[交付记录](docs/30-web-analysis-delivery.md)记录实际验收与限制。
+- **隔离修复（P0-06）**：两个固定案例支持 CLI 模型修复、独立回归和恢复检查。冻结实验12次中11次通过、1次未完成，失败记录保留；网页可查看候选与逐项结果，暂不发起修复或接受候选。小样本不代表通用修复率或多角色优越，见[交付记录](docs/31-p0-06-delivery.md)。
+- **后续**：更多独立工具项目接入、项目记忆与真实用户使用验证。范围和依赖见 [迭代台账](docs/03-roadmap.md)。
+
+## 继续了解
+
+| 目标 | 入口 |
+|---|---|
+| 安装、网页启动、模型环境变量、MCP / Docker 命令 | [本地开发与运行指南](docs/27-local-development-guide.md) |
+| 保存记录、备份数据库、处理异常中断 | [记录与恢复](docs/27-local-development-guide.md#运行记录与恢复) |
+| 运行测试、区分模拟测试和实际链路证据 | [工程验收](docs/27-local-development-guide.md#工程验收与常见问题) · [质量门禁](docs/04-quality-gates.md) |
+| 了解支持范围和角色维护方式 | [产品约束](docs/01-constraints.md) · [Agent 目录规范](docs/09-agent-modules.md) |
+| 查看全部规格、历史记录和独立评审 | [工程文档索引](docs/README.md) |
+
+仓库：[ykduan0916/agent-repair-workbench](https://github.com/ykduan0916/agent-repair-workbench)。Python 包和 CLI 名称为 `agent-workbench`。当前未附项目开源许可证；源码公开可见不等于授予通用开源许可，第三方依赖遵循各自许可证。

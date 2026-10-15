@@ -36,6 +36,7 @@ from agent_workbench.orchestration.contracts import (
     TaskSpec,
 )
 from agent_workbench.orchestration.policy import ROLE_TOOLS, AuthorizationContext, EditableFile
+from agent_workbench.repair_cases.profiles import RepairCaseId, get_profile
 from agent_workbench.runner.models import SandboxConfig
 
 MANIFEST_SHA256 = "b1743325153cecf414a44c31829087b229cffe66d01574c06680b42b39da6809"
@@ -43,7 +44,7 @@ MAX_FILE = 131_072
 SECTIONS: tuple[Literal["summary", "findings", "events"], ...] = ("summary", "findings", "events")
 _CASE_IDS = {
     name: str(uuid5(NAMESPACE_URL, "awb:synthetic-analysis:" + name))
-    for name in ("output_mismatch", "passing")
+    for name in ("output_mismatch", "passing", "counter_offset")
 }
 
 
@@ -126,13 +127,21 @@ class TaskResourceRegistry:
         task_id: str,
         intent: Intent,
         budget: Budget,
-        case_name: Literal["output_mismatch", "passing"],
+        case_name: Literal["output_mismatch", "passing", "counter_offset"],
         root: Path,
     ) -> None:
+        if case_name not in _CASE_IDS:
+            raise ResourceError("INVALID_INPUT")
+        self.manifest_sha256 = MANIFEST_SHA256
+        if case_name == "counter_offset":
+            profile = get_profile(case_name)
+            if root != ROOT / profile.resource_directory:
+                raise ResourceError("PERMISSION_DENIED")
+            self.manifest_sha256 = profile.manifest_sha256
         self._root = root
         self._records: dict[str, _EvidenceRecord] = {}
         manifest = CaseManifest.model_validate_json(
-            read_verified(root, "manifest.json", MANIFEST_SHA256)
+            read_verified(root, "manifest.json", self.manifest_sha256)
         )
         self.case_name = case_name
         self.case_id = _CASE_IDS[case_name]
@@ -143,9 +152,9 @@ class TaskResourceRegistry:
         self._source = manifest.source
         self.snapshot_id = digest(canonical(self._source.model_dump(mode="json")))
         self._config = canonical(
-            SandboxConfig(
-                scenario="wrong_type" if case_name == "output_mismatch" else "pass"
-            ).model_dump(mode="json")
+            SandboxConfig(scenario="pass" if case_name == "passing" else "wrong_type").model_dump(
+                mode="json"
+            )
         )
         self._case = canonical(
             CallCase(case_id="synthetic-lookup", tool="lookup", arguments={"id": 1}).model_dump(
@@ -305,7 +314,7 @@ class TaskResourceRegistry:
 
     def verify_case(self) -> bytes:
         manifest = CaseManifest.model_validate_json(
-            read_verified(self._root, "manifest.json", MANIFEST_SHA256)
+            read_verified(self._root, "manifest.json", self.manifest_sha256)
         )
         raw = read_verified(
             self._root, self.case_name + ".json", manifest.envelopes[self.case_name]
@@ -332,7 +341,7 @@ def load_case(
     budget: Budget,
     root: Path | None = None,
 ) -> TaskResourceRegistry:
-    if case_name not in _CASE_IDS:
+    if case_name not in ("output_mismatch", "passing"):
         raise ResourceError("INVALID_INPUT")
     return TaskResourceRegistry(
         task_id=task_id,
@@ -340,4 +349,21 @@ def load_case(
         budget=budget,
         case_name=case_name,
         root=root if root is not None else ROOT / "examples/analysis",
+    )
+
+
+def load_repair_case(
+    case_id: RepairCaseId, *, task_id: str, budget: Budget
+) -> TaskResourceRegistry:
+    """P0-06 host entry: only two registered cases, no caller-selected root or scenario."""
+    try:
+        profile = get_profile(case_id)
+    except ValueError:
+        raise ResourceError("INVALID_INPUT") from None
+    return TaskResourceRegistry(
+        task_id=task_id,
+        intent="propose_repair",
+        budget=budget,
+        case_name=profile.case_id,
+        root=ROOT / profile.resource_directory,
     )

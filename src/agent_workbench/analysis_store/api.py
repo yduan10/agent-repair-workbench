@@ -13,7 +13,7 @@ from agent_workbench.run_store.models import StoreError
 router = APIRouter(prefix="/api/analyses")
 
 
-def _read(task_id: str | None, limit: int) -> Response:
+def _read(task_id: str | None, limit: int, *, evidence: bool = False) -> Response:
     store = AnalysisStore(state_directory())
     try:
         if task_id is None:
@@ -26,6 +26,11 @@ def _read(task_id: str | None, limit: int) -> Response:
                 }
             )
         saved, events = store.detail(task_id)
+        if evidence:
+            from agent_workbench.analysis_store.evidence import resolve_evidence
+
+            content = resolve_evidence(saved.summary, saved.sha256)
+            return JSONResponse(content.model_dump(mode="json"))
         return JSONResponse(
             {
                 "summary": saved.summary.model_dump(mode="json"),
@@ -69,3 +74,28 @@ async def detail(task_id: str) -> Response:
     except ValueError:
         return JSONResponse({"error": "invalid_task_id"}, status_code=400)
     return await asyncio.to_thread(_read, task_id, 20)
+
+
+@router.get("/{task_id}/evidence")
+async def evidence(task_id: str, request: Request) -> Response:
+    try:
+        if str(UUID(task_id)) != task_id:
+            raise ValueError
+    except ValueError:
+        return JSONResponse({"error": "invalid_task_id"}, status_code=400)
+    # Reconstruction uses the bounded checker; share its single local execution slot.
+    gate: asyncio.Semaphore = request.app.state.gate
+    if gate.locked():
+        return JSONResponse({"error": "evidence_busy"}, status_code=429)
+    await gate.acquire()
+
+    async def execute() -> Response:
+        try:
+            return await asyncio.to_thread(_read, task_id, 20, evidence=True)
+        finally:
+            gate.release()
+
+    worker = asyncio.create_task(execute())
+    request.app.state.workers.add(worker)
+    worker.add_done_callback(request.app.state.workers.discard)
+    return await asyncio.shield(worker)

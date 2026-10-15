@@ -38,7 +38,7 @@ dev = [
 packages = ["src/agent_workbench"]
 
 [tool.pytest.ini_options]
-testpaths = ["src/agent_workbench/agents/diagnosis/tests", "src/agent_workbench/agents/repair/tests", "src/agent_workbench/agents/verification/tests", "tests", "experiments/public_mcp_case/test_prepare.py", "containers/p0_03/test_prepare.py"]
+testpaths = ["src/agent_workbench/agents/single/tests", "src/agent_workbench/agents/diagnosis/tests", "src/agent_workbench/agents/repair/tests", "src/agent_workbench/agents/verification/tests", "tests", "experiments/public_mcp_case/test_prepare.py", "containers/p0_03/test_prepare.py"]
 addopts = "-q --import-mode=importlib"
 markers = ["docker: requires explicitly prepared local P0-03 Docker image", "public_case: requires explicitly prepared and reviewed historical source; no automatic downloads"]
 

@@ -118,7 +118,25 @@ def main(argv: list[str] | None = None) -> int:
 
     configure(commands.add_parser("analyze", help="analyze a reviewed case with bounded roles"))
     configure_history(commands.add_parser("analyses", help="read or reconcile analyses"))
+    from agent_workbench.repair_runtime.cli import configure as configure_repair
+
+    configure_repair(commands.add_parser("repair", help="repair the fixed audited MCP fixture"))
+    from agent_workbench.repair_recovery.cli import configure as configure_recovery
+
+    configure_recovery(
+        commands.add_parser(
+            "repair-recovery", help="inspect or explicitly reap orphan repair executions"
+        )
+    )
     args = parser.parse_args(argv)
+    if args.command == "repair-recovery":
+        from agent_workbench.repair_recovery.cli import main as recovery_main
+
+        return recovery_main(args)
+    if args.command == "repair":
+        from agent_workbench.repair_runtime.cli import main as repair_main
+
+        return repair_main(args)
     if args.command in ("analyze", "analyses"):
         from agent_workbench.orchestration.cli import main as analyses_main
 

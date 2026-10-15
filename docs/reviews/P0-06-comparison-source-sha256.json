@@ -1,0 +1,5 @@
+{
+  "src/agent_workbench/candidate_execution/compare.py": "4b1adb21f7b53c9f6ed5f3241513364622d9b3841d2deb84e60cfd6a586a5a18",
+  "tests/test_candidate_comparison.py": "b143e033f4ac3dcefcc1ed73e251883e297cc4b4fc8116ceb41bf188a0ea1aa4",
+  "tests/test_candidate_comparison_review.py": "d15cd1ecc4b14ba894f9a00e6f7da268776b85266fff61786d01ddf7459b60fd"
+}

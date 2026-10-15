@@ -26,9 +26,9 @@ def catalog_bytes() -> bytes:
     }
     return json.dumps(
         {
-            "catalog_version": 2,
+            "catalog_version": 3,
             "cli_runtime_available": True,
-            "web_runtime_available": False,
+            "web_runtime_available": True,
             "roles": [
                 {"id": role, "allowed_tools": names, "output_schema": schemas[role]}
                 for role, names in ROLE_TOOLS.items()

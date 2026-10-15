@@ -26,17 +26,22 @@ export const runDetailSchema = z.strictObject({ run: runSchema, events: z.array(
 export type RunView = z.infer<typeof runSchema>;
 export type RunDetail = z.infer<typeof runDetailSchema>;
 export const runStatusLabels: Record<RunView["status"], string> = {
-  queued: "等待执行", running: "执行中", succeeded: "成功", failed: "失败", cancelled: "已取消", outcome_unknown: "结果未知",
+  queued: "排队中", running: "运行中", succeeded: "调用成功", failed: "调用失败", cancelled: "已停止", outcome_unknown: "结果未知",
 };
+export function activeStatus(status: RunView["status"]) { return status === "running" || status === "queued"; }
+/** Wall-clock duration of a finished run; null while it is still active. */
+export function runDurationMs(run: RunView) {
+  return activeStatus(run.status) ? null : Math.max(0, (run.updated_at - run.created_at) * 1000);
+}
 export const scenarioLabels: Record<z.infer<typeof scenario>, string> = {
-  wrong_type: "输出类型不一致", pass: "正常调用", tool_error: "工具错误", timeout: "调用超时", response_lost: "响应丢失",
+  wrong_type: "返回类型不符", pass: "正常调用", tool_error: "工具错误", timeout: "调用超时", response_lost: "响应丢失",
   duplicate_result: "重复结果", crash_before_call: "调用前崩溃", crash_during_call: "调用中崩溃",
   crash_before_result: "返回前崩溃", stdout_flood: "标准输出超限", stderr_flood: "错误输出超限",
   stdout_total_flood: "累计输出超限", pid_limit: "进程数限制", spawn_child: "子进程回收",
   oom: "内存超限", cpu_spin: "CPU 限制", policy_probe: "隔离策略探测",
 };
-export const eventLabels = { created: "记录已创建", claimed: "执行已领取", finished: "执行已结束", reconciled: "完成恢复对账" };
-export const executorLabels = { absent: "容器不存在", running: "容器运行中", stopped: "容器已停止", unavailable: "执行器不可用", mismatch: "归属不匹配" };
+export const eventLabels = { created: "已创建", claimed: "开始运行", finished: "运行结束", reconciled: "中断后已核对状态" };
+export const executorLabels = { absent: "容器不存在", running: "容器运行中", stopped: "容器已停止", unavailable: "Docker 不可用", mismatch: "容器不属于此运行" };
 const finding = z.strictObject({ code: z.string().max(128), phase: z.string().max(64), instance_path: z.string().max(8192), schema_path: z.string().max(8192) });
 const checkStatus = z.enum(["passed", "failed", "not_checked", "skipped"]);
 // Preserve metadata-only artifacts. Unknown fields are rejected, never silently downloaded.
@@ -74,6 +79,7 @@ export class RunApiError extends Error {
   constructor(message: string, readonly status?: number) { super(message); }
 }
 const LIMIT = 1024 * 1024;
+const UNREADABLE = "本机服务返回的数据无法识别，已停止显示。通常是页面与服务版本不一致：请重启本机服务后刷新页面。";
 
 export async function readJSON(url: string, signal: AbortSignal, init: { method: "POST"; body: string } | undefined = undefined, maxBytes = LIMIT): Promise<{ value: unknown; bytes: Uint8Array<ArrayBuffer> }> {
   const response = await fetch(url, { method: init?.method ?? "GET", ...(init ? { body: init.body, headers: { "Content-Type": "application/json" } } : {}), cache: "no-store", signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]) });
@@ -83,7 +89,7 @@ export async function readJSON(url: string, signal: AbortSignal, init: { method:
   }
   if (response.headers.get("content-type")?.split(";")[0].trim() !== "application/json" || !response.body) {
     await response.body?.cancel().catch(() => {});
-    throw new RunApiError("返回的数据格式不符合约定，未展示或下载。");
+    throw new RunApiError(UNREADABLE);
   }
   const reader = response.body.getReader();
   const chunks: Uint8Array[] = [];
@@ -93,7 +99,7 @@ export async function readJSON(url: string, signal: AbortSignal, init: { method:
       const { value, done } = await reader.read();
       if (done) break;
       length += value.byteLength;
-      if (length > maxBytes) { await reader.cancel(); throw new RunApiError(`返回数据超过 ${maxBytes / LIMIT} MiB 限制，未展示或下载。`); }
+      if (length > maxBytes) { await reader.cancel(); throw new RunApiError(`返回数据超过 ${maxBytes / LIMIT} MiB，已停止读取。`); }
       chunks.push(value);
     }
   } finally { reader.releaseLock(); }
@@ -101,19 +107,19 @@ export async function readJSON(url: string, signal: AbortSignal, init: { method:
   let offset = 0;
   for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
   try { return { value: JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)), bytes }; }
-  catch { throw new RunApiError("返回的数据格式不符合约定，未展示或下载。"); }
+  catch { throw new RunApiError(UNREADABLE); }
 }
 
 export async function loadRuns(signal: AbortSignal) {
   const { value } = await readJSON("/api/runs?limit=50", signal);
   const parsed = runListSchema.safeParse(value);
-  if (!parsed.success) throw new RunApiError("运行列表不符合数据约定，请更新服务后重试。");
+  if (!parsed.success) throw new RunApiError("运行列表不符合数据约定，已停止显示。通常是页面与服务版本不一致：请重启本机服务后刷新页面。");
   return parsed.data.runs;
 }
 export async function loadRun(id: string, signal: AbortSignal) {
   const { value } = await readJSON(`/api/runs/${uuid.parse(id)}`, signal);
   const parsed = runDetailSchema.safeParse(value);
-  if (!parsed.success || parsed.data.run.run_id !== id) throw new RunApiError("运行详情不符合数据约定，未展示。");
+  if (!parsed.success || parsed.data.run.run_id !== id) throw new RunApiError("运行详情不符合数据约定，已停止显示。通常是页面与服务版本不一致：请重启本机服务后刷新页面。");
   return parsed.data;
 }
 export type SandboxReport = z.infer<typeof sandboxReportSchema>;
@@ -122,7 +128,7 @@ export async function loadVerifiedReport(run: RunView, signal: AbortSignal) {
   const parsed = sandboxReportSchema.safeParse(value);
   const digest = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), byte => byte.toString(16).padStart(2, "0")).join("");
   if (!parsed.success || parsed.data.record_id !== run.run_id || parsed.data.run_id !== run.attempt_id || digest !== run.report_sha256) {
-    throw new RunApiError("报告结构、关联或摘要校验未通过，未下载。请刷新详情后重试。");
+    throw new RunApiError("报告的结构、关联或摘要校验未通过，未显示也未下载。请刷新后重试；仍然失败，说明报告文件已被改动。");
   }
   return { report: parsed.data, bytes };
 }
@@ -130,5 +136,17 @@ export async function loadReport(run: RunView, signal: AbortSignal) {
   return (await loadVerifiedReport(run, signal)).bytes;
 }
 export function runError(error: unknown) {
-  return error instanceof RunApiError ? error.message : "未能读取本地运行记录，请检查服务与网络后重试。";
+  return error instanceof RunApiError ? error.message : "连接不上本机服务。请确认服务已启动（端口 8030）后重试。";
+}
+
+/** Resolves after `ms`; while the tab is hidden it waits until the tab is visible again. */
+export function pollDelay(ms: number, signal: AbortSignal) {
+  return new Promise<void>((resolve) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const done = () => { cleanup(); resolve(); };
+    const visible = () => { if (!document.hidden) done(); };
+    const cleanup = () => { clearTimeout(timer); document.removeEventListener("visibilitychange", visible); signal.removeEventListener("abort", cleanup); };
+    signal.addEventListener("abort", cleanup, { once: true });
+    timer = setTimeout(() => { if (document.hidden) document.addEventListener("visibilitychange", visible); else done(); }, ms);
+  });
 }

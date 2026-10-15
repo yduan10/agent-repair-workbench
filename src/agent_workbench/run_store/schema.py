@@ -86,3 +86,94 @@ analysis_execution_links = Table(
     Column("request_id", String, nullable=False),
     Column("payload_sha256", String, nullable=False),
 )
+
+# P0-06 independent ledger. Old analysis rows and terminal meanings remain unchanged.
+repair_tasks = Table(
+    "repair_tasks",
+    metadata,
+    Column("task_id", String, primary_key=True),
+    Column("revision", Integer, nullable=False),
+    Column("payload", LargeBinary, nullable=False),
+    Column("sha256", String, nullable=False),
+)
+repair_requests = Table(
+    "repair_requests",
+    metadata,
+    Column("task_id", ForeignKey("repair_tasks.task_id"), primary_key=True),
+    Column("request_id", String, primary_key=True),
+    Column("payload", LargeBinary, nullable=False),
+    Column("sha256", String, nullable=False),
+)
+repair_candidates = Table(
+    "repair_candidates",
+    metadata,
+    Column("candidate_id", String, primary_key=True),
+    Column("task_id", ForeignKey("repair_tasks.task_id"), nullable=False),
+    Column("request_id", String, nullable=False),
+    Column("sequence", Integer, nullable=False),
+    Column("payload", LargeBinary, nullable=False),
+    Column("sha256", String, nullable=False),
+)
+repair_events = Table(
+    "repair_events",
+    metadata,
+    Column("task_id", ForeignKey("repair_tasks.task_id"), primary_key=True),
+    Column("revision", Integer, primary_key=True),
+    Column("payload", LargeBinary, nullable=False),
+    Column("sha256", String, nullable=False),
+)
+
+repair_comparisons = Table(
+    "repair_comparisons",
+    metadata,
+    Column("comparison_id", String, primary_key=True),
+    Column("task_id", ForeignKey("repair_tasks.task_id"), nullable=False),
+    Column("request_id", String, nullable=False),
+    Column(
+        "candidate_id", ForeignKey("repair_candidates.candidate_id"), nullable=False, unique=True
+    ),
+    Column("payload", LargeBinary, nullable=False),
+    Column("sha256", String, nullable=False),
+)
+repair_comparison_attempts = Table(
+    "repair_comparison_attempts",
+    metadata,
+    Column("attempt_id", String, primary_key=True),
+    Column("comparison_id", ForeignKey("repair_comparisons.comparison_id"), nullable=False),
+    Column("slot_index", Integer, nullable=False),
+    Column("status", String, nullable=False),
+    Column("report_sha256", String),
+)
+
+repair_execution_identities = Table(
+    "repair_execution_identities",
+    metadata,
+    Column("attempt_id", String, primary_key=True),
+    Column("kind", String, nullable=False),
+    Column("owner_id", String, nullable=False),
+)
+repair_reproductions = Table(
+    "repair_reproductions",
+    metadata,
+    Column("task_id", String, ForeignKey("repair_tasks.task_id"), primary_key=True),
+    Column("request_id", String, primary_key=True),
+    Column("attempt_id", String, nullable=False, unique=True),
+    Column("payload", LargeBinary, nullable=False),
+    Column("sha256", String, nullable=False),
+)
+
+# No FK: browser request tombstones remain when analysis history is pruned.
+web_analysis_requests = Table(
+    "web_analysis_requests",
+    metadata,
+    Column("request_id", String, primary_key=True),
+    Column("payload_sha256", String, nullable=False),
+    Column("case_name", String, nullable=False),
+    Column("intent", String, nullable=False),
+    Column("policy_sha256", String, nullable=False),
+    Column("initial_sha256", String, nullable=False),
+    Column("claim_sha256", String, nullable=False),
+    Column("consumed", Integer, nullable=False),
+    Column("active", Integer, nullable=False),
+    Column("cancel_requested", Integer, nullable=False),
+)

@@ -214,6 +214,17 @@ class AnalysisStore:
     def create(
         self, summary: AnalysisSummary, event: AnalysisEvent, *, fence: AnalysisFence
     ) -> SaveResult:
+        with self._transaction(write=True) as connection:
+            return self._create_analysis(connection, summary, event, fence=fence)
+
+    def _create_analysis(
+        self,
+        connection: Connection,
+        summary: AnalysisSummary,
+        event: AnalysisEvent,
+        *,
+        fence: AnalysisFence,
+    ) -> SaveResult:
         raw, event_raw = validated(summary, event)
         fence.require(self.directory, summary.task_id)
         if (
@@ -226,31 +237,30 @@ class AnalysisStore:
             or summary.usage.tool_calls
         ):
             raise StoreError("invalid_analysis")
-        with self._transaction(write=True) as connection:
-            exists = connection.execute(
-                select(analysis_summaries.c.task_id).where(
-                    analysis_summaries.c.task_id == summary.task_id
-                )
-            ).first()
-            if exists:
-                old = self._get(connection, summary.task_id)
-                if old.sha256 == digest(raw) and self._events(connection, summary.task_id)[
-                    0
-                ].sha256 == digest(event_raw):
-                    return old
-                raise StoreError("analysis_conflict")
-            now = self._now()
-            connection.execute(
-                analysis_summaries.insert().values(
-                    task_id=summary.task_id,
-                    revision=0,
-                    summary_json=raw,
-                    sha256=digest(raw),
-                    updated_at=now,
-                )
+        exists = connection.execute(
+            select(analysis_summaries.c.task_id).where(
+                analysis_summaries.c.task_id == summary.task_id
             )
-            self._append_event(connection, summary, event_raw, now)
-            return SaveResult(summary, digest(raw), False)
+        ).first()
+        if exists:
+            old = self._get(connection, summary.task_id)
+            if old.sha256 == digest(raw) and self._events(connection, summary.task_id)[
+                0
+            ].sha256 == digest(event_raw):
+                return old
+            raise StoreError("analysis_conflict")
+        now = self._now()
+        connection.execute(
+            analysis_summaries.insert().values(
+                task_id=summary.task_id,
+                revision=0,
+                summary_json=raw,
+                sha256=digest(raw),
+                updated_at=now,
+            )
+        )
+        self._append_event(connection, summary, event_raw, now)
+        return SaveResult(summary, digest(raw), False)
 
     def _save(
         self,

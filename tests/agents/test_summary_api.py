@@ -78,9 +78,9 @@ def test_catalog_real_api_is_read_only_and_exports_valid_schemas(tmp_path, monke
         response = client.get("/api/agent-contracts")
         assert response.status_code == 200 and response.headers["cache-control"] == "no-store"
         data = response.json()
-        assert data["catalog_version"] == 2
+        assert data["catalog_version"] == 3
         assert data["cli_runtime_available"] is True
-        assert data["web_runtime_available"] is False
+        assert data["web_runtime_available"] is True
         assert [x["id"] for x in data["roles"]] == ["diagnosis", "repair", "verification"]
         assert len(data["tools"]) == 5
         for role in data["roles"]:

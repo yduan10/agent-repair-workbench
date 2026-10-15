@@ -12,12 +12,12 @@ test('reviewer all registered docs TOCs and local cross-links resolve',async({pa
   for(const path of routes){
     const response=await page.goto(path);
     if(response?.status()!==200){broken.push({path,status:response?.status()});continue;}
-    const missing=await page.locator('.document-toc a').evaluateAll(links=>links.flatMap(link=>{
+    const missing=await page.locator('.doc-toc a').evaluateAll(links=>links.flatMap(link=>{
       const href=link.getAttribute('href')!;
       return document.getElementById(decodeURIComponent(href.slice(1)))?[]:[href];
     }));
     if(missing.length)broken.push({path,missing});
-    for(const href of await page.locator('.markdown-document a[href^="/docs/"]').evaluateAll(links=>links.map(link=>link.getAttribute('href')!)))localLinks.add(href);
+    for(const href of await page.locator('.doc-prose a[href^="/docs/"]').evaluateAll(links=>links.map(link=>link.getAttribute('href')!)))localLinks.add(href);
     const ids=await page.locator('[id]').evaluateAll(nodes=>nodes.map(node=>node.id));
     if(new Set(ids).size!==ids.length)broken.push({path,duplicate_ids:ids.filter((id,i)=>ids.indexOf(id)!==i)});
   }
@@ -39,13 +39,13 @@ for(const [theme,width] of [['dark',390],['light',1440]] as const){
     await page.emulateMedia({colorScheme:theme,reducedMotion:'reduce'});
     await page.goto('/docs/02-architecture');
     if(width===390){
-      const summary=page.locator('.document-mobile-toc summary');
+      const summary=page.locator('.doc-mobile-toc summary');
       await summary.focus();await summary.press('Enter');
       const toc=page.getByRole('navigation',{name:'本页章节（移动版）'});
       await expect(toc).toBeVisible();
       await toc.getByRole('link').first().focus();await page.keyboard.press('Enter');
       await expect(page).toHaveURL(/#/);
-      const table=page.locator('.markdown-table').first();
+      const table=page.locator('.doc-table').first();
       await table.focus();await table.press('ArrowRight');
       await expect.poll(()=>table.evaluate(el=>el.scrollLeft)).toBeGreaterThan(0);
     }
@@ -53,26 +53,33 @@ for(const [theme,width] of [['dark',390],['light',1440]] as const){
   });
 }
 
-test('reviewer unsupported diagram falls back to source without external requests',async({page})=>{
+// A fulfilled (mocked) document is not treated as a local origin by Chrome's Local Network Access
+// checks, which then block its own scripts from 127.0.0.1; this test launches a browser without them.
+test('reviewer unsupported diagram falls back to source without external requests',async({playwright,baseURL})=>{
+  const browser=await playwright.chromium.launch({channel:process.env.PLAYWRIGHT_CHANNEL||undefined,args:['--disable-features=LocalNetworkAccessChecks,LocalNetworkAccessChecksWebSockets']});
+  try{
+  const page=await browser.newPage({baseURL});
   const external:string[]=[];
-  page.on('request',r=>{if(!r.url().startsWith(`http://127.0.0.1:${process.env.PW_PORT||'3010'}/`)&&!r.url().startsWith('data:'))external.push(r.url());});
+  page.on('request',r=>{if(!r.url().startsWith(`http://127.0.0.1:${process.env.PW_PORT||'3010'}/`)&&!r.url().startsWith('data:')&&!r.url().startsWith('ws://127.0.0.1'))external.push(r.url());});
   await page.route('**/docs/02-architecture',async route=>{
     const response=await route.fetch();
     await route.fulfill({response,body:(await response.text()).replaceAll('flowchart LR','flowchart XX')});
   });
   await page.goto('/docs/02-architecture');
-  await expect(page.getByText('图表暂未渲染，可展开源码阅读。')).toBeVisible();
-  await page.locator('.document-diagram summary').click();
+  await expect(page.getByText('图表加载失败，可展开下方源码阅读。')).toBeVisible();
+  await page.locator('.doc-diagram summary').click();
   await expect(page.getByRole('region',{name:'图表源码，可横向滚动'})).toContainText('flowchart XX');
-  await expect(page.locator('.document-diagram img')).toHaveCount(0);
+  await expect(page.locator('.doc-diagram img')).toHaveCount(0);
   expect(external).toEqual([]);
+  }finally{await browser.close();}
 });
 
 test('reviewer rapid theme changes keep final SVG theme and source readable',async({page})=>{
   await page.goto('/docs/02-architecture');
-  const image=page.locator('.document-diagram img');
+  const image=page.locator('.doc-diagram img');
   await expect(image).toBeVisible();
-  const theme=page.getByRole('combobox',{name:'外观主题'});
+  const group=page.getByRole('group',{name:'外观主题'});
+  const theme={selectOption:(name:'light'|'dark')=>group.getByRole('button',{name:name==='light'?'浅色':'深色'}).click()};
   const style=async()=>{
     const src=await image.getAttribute('src');
     return src?decodeURIComponent(src.split(',')[1]).match(/<style>([\s\S]*?)<\/style>/)?.[1]:undefined;
@@ -93,7 +100,7 @@ test('reviewer rapid theme changes keep final SVG theme and source readable',asy
 test('reviewer diagram closeup',async({page})=>{
   await page.setViewportSize({width:1440,height:900});
   await page.goto('/docs/02-architecture');
-  await expect(page.locator('.document-diagram img')).toBeVisible();
-  await expect.poll(()=>page.locator('.document-diagram img').evaluate(el=>(el as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
-  await page.locator('.document-diagram').screenshot({path:'../artifacts/ui06-diagram-closeup.png'});
+  await expect(page.locator('.doc-diagram img')).toBeVisible();
+  await expect.poll(()=>page.locator('.doc-diagram img').evaluate(el=>(el as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  await page.locator('.doc-diagram').screenshot({path:'../artifacts/ui06-diagram-closeup.png'});
 });

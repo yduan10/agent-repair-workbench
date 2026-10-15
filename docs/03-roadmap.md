@@ -29,7 +29,9 @@
 | UI-06 | 站内工程文档阅读器与排版 | UI-05 | 本次 | done | [规格](21-ui-06-document-reader.md)；planned → ready → in_progress → in_review → done；[复审](reviews/UI-06-code-review.md) |
 | UI-05 | 功能引导、文档入口、主题修复与公开源码 | P0-05a | 本次 | done | [范围与验收](20-ui-05-public-source.md)；planned → ready → in_progress → in_review → done |
 | P0-05 | M2 三角色有限循环、模型适配与预算 | P0-04 | 3–5 天 | done | planned → ready → in_progress → in_review → done；[P0-05a](19-p0-05a-delivery.md)、[P0-05b交付验收](25-p0-05b-delivery.md)、[独立交付复审](reviews/P0-05b-delivery-review.md)；554默认Python、28真实Docker、真实模型全流程、82主UI与独立21+1通过；建议未应用 |
-| P0-06 | M2 隔离补丁、冻结验收、基线候选比较 | P0-05 | 3–5 天 | planned | 待实现 |
+| UI-07 | 导航语义、诊断结果优先与紧凑过程记录 | P0-05b | 本次 | done | planned → ready → in_progress → in_review → done；[验收记录](28-ui-07-analysis-density.md)、[独立复审](reviews/UI-07-review.md)，97事件分页、8次axe与真实记录核对通过 |
+| P0-06 | M2 隔离补丁、冻结验收、基线候选比较 | P0-05 | 3–5 天 | done | planned → ready → in_progress → in_review → done；两固定案例12次冻结模型实验11通过/1不可判定，全部保留；独立分批评审与总体验收见[31](31-p0-06-delivery.md) |
+| UI-08 | 产品化界面：中性工程风视觉、信息架构重组、文案规范、共享外壳与环境状态 | UI-07、P1-01b | 本次 | done | planned → ready → in_progress → in_review → done；生产浏览器181 passed/9 skipped、真实控制台/修复读取通过；P3维护项与独立复审见[33](33-ui-08-delivery.md) |
 
 负责人：实现 Codex，产品验收 Yukun，质量门禁由专职 reviewer 出具证据。所有 Defect P0/P1 必须在对应任务标 done 前修复；不能用上述估计作为豁免。
 
@@ -86,7 +88,8 @@
 | ID | 优先级 | 工作 | 依赖 | 验收 | 状态 |
 |---|---|---|---|---|---|
 | P1-01a | P1 | 固定场景网页受控复现、停止与报告操作 | P0-03/04 | [规格](22-web-reproduction.md)、[设计复审](reviews/P1-01a-design-review.md)；W01～W12，[验收记录](23-p1-01a-delivery.md)；planned → ready → in_progress → in_review → done | done |
-| P1-01 | P1 | 完整 Web 运行/审批接入（不含已拆分的固定场景入口） | P0-06 | 输入→运行→证据→diff→回归；断线重连不重复任务；键盘/空态/错误态可用 | planned |
+| P1-01b | P1 | 固定案例网页分析与执行控制台 | P0-05 | [实施规格](29-web-analysis-console.md)；planned → ready → in_progress；接收账本、服务、前端控制台、证据阅读与交付文档已独立评审；真实网页模型、容器及T05取消回收链路通过，见[交付记录](30-web-analysis-delivery.md) | done |
+| P1-01 | P1 | 完整 Web 运行/审批接入（不含已拆分的固定场景入口） | P0-06 | planned → ready → in_progress（设计）；[网页修复设计](34-p1-01-web-repair.md)及[框架预审](reviews/P1-01-web-repair-design-review.md)；先冻结B1接收/执行权契约，再实施；审批不等于写回 | in_progress |
 | P1-02 | P1 | 项目经验记忆 | P0-06 | 人工确认、来源、版本匹配、过期/删除；错误经验负向测试 | planned |
 | P1-03 | P1 | CLI/CI 打包与接入指南 | P0-06 | 三个不同工具项目接入，其中一个非开发 fixture；安装/卸载/升级验证 | planned |
 | P1-04 | P1 | 使用验证与独立评测集 | P0-03 | ≥10 个来源明确的故障案例；真实/合成分报；记录真实开发者试用反馈或明确未取得 | planned |
@@ -194,4 +197,11 @@
 - 真实模型三次完整尝试全部保留：HTTP400未知、调用预算停止、最终 proposal_only；最后7次模型/4次工具/1份建议，14.131秒，实际输入41,644/输出1,541 tokens。不得计算为真实项目修复率。
 - 默认Python554通过/30显式跳过；另28项真实Docker通过；前端82通过/3显式live跳过，运行记录专用21通过、分析专用1通过。静态检查/类型/构建/锁及运行依赖审计通过。具体命令、重叠计数与边界见[25](25-p0-05b-delivery.md)。
 - 主库显式升级0003且原记录哈希保真；实现分批独立评审、缺陷修复复审、交付文档增量复审通过。诊断页提供真实记录、步骤、用量、证据与摘要下载，旧开发历史保留。
-- 下一项P0-06先冻结隔离候选/可信验收设计，再实现应用与回归。当前不产生candidate_verified，网页不发起模型分析；记忆系统仍属于P1-02。
+- 该历史阶段的下一项为P0-06；P0-05b交付时不产生candidate_verified、网页不发起模型分析。后续新增能力以表格台账及P1-01b/P0-06交付记录为准；记忆系统仍属于P1-02。
+
+### 2026-10-15：UI-08与P0-06完成，进入P1-01设计
+
+- 后端默认1396 passed/66 skipped；两案例真实Docker10 passed；完整生产浏览器181 passed/9 skipped。跳过项不计通过，真实链路单独验收。
+- 两案例冻结模型实验12次全部保留，11通过、1不可判定；单角色5/6、三角色6/6，后者成本和平均耗时更高，不据小样本宣称优势。
+- 独立代码/实链路/材料/文档复审路径见31/33。27项已登记UI P3归后续维护，没有未闭阻断项。
+- 下一项P1-01仅开始设计：在现有修复页接入开始/停止、候选审阅和人工决定；B1详细契约尚待冻结，不把框架预审当成功能上线。

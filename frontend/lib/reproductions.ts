@@ -20,31 +20,31 @@ export const PENDING_KEY = "awb-pending-reproduction-v1";
 export async function loadCatalog(signal: AbortSignal) {
   const { value } = await readJSON("/api/reproductions/catalog", signal);
   const result = catalogSchema.safeParse(value);
-  if (!result.success) throw new RunApiError("场景目录不符合约定，已停止接收新的复现。请更新服务后重查。");
+  if (!result.success) throw new RunApiError("无法读取场景列表（不符合约定），暂时不能开始复现。通常是页面与服务版本不一致：请重启本机服务后刷新。");
   return result.data;
 }
 export async function startReproduction(request: PendingReproduction, signal: AbortSignal) {
   const { value } = await readJSON("/api/reproductions", signal, { method: "POST", body: JSON.stringify(pendingSchema.parse(request)) });
   const result = acceptedSchema.safeParse(value);
   if (!result.success || result.data.run.run_id !== request.request_id || result.data.run.scenario !== request.scenario) {
-    throw new RunApiError("提交响应关联不符合约定。请只查询本次请求的结果。");
+    throw new RunApiError("服务的回应与本次提交对不上，无法确认是否已开始。请点「查询提交结果」，不要重新提交。");
   }
   return result.data;
 }
 export async function cancelReproduction(id: string, signal: AbortSignal) {
   const { value } = await readJSON(`/api/reproductions/${uuid.parse(id)}/cancel`, signal, { method: "POST", body: "{}" });
   const result = cancelSchema.safeParse(value);
-  if (!result.success || result.data.run_id !== id) throw new RunApiError("停止响应不符合约定，请查询真实运行状态。");
+  if (!result.success || result.data.run_id !== id) throw new RunApiError("无法确认是否已停止。请刷新查看运行状态。");
   return result.data;
 }
 export function submissionMessage(error: unknown) {
   if (error instanceof RunApiError) {
-    if (error.status === 429) return "已有网页任务占用执行槽。先查看当前运行，结束后再新建。";
-    if (error.status === 400 || error.status === 403) return "提交未被接受，请确认本机服务与页面版本一致后重查准备状态。";
-    if (error.status === 409) return "请求标识发生冲突，本次未新建运行。请查询已有记录。";
-    if (error.status === 410) return "本请求对应的旧记录已清理，服务不会重新执行。";
+    if (error.status === 429) return "已有一个复现在运行，同一时间只能运行一个。等它结束后再开始。";
+    if (error.status === 400 || error.status === 403) return `服务拒绝了这次提交（HTTP ${error.status}），通常是版本不一致。请重启本机服务后刷新页面。`;
+    if (error.status === 409) return "这次提交与已有运行冲突，没有新建运行。请在下方运行记录中查看。";
+    if (error.status === 410) return "这次提交对应的记录已被清理。如需再次运行，请重新开始复现。";
   }
-  return "提交结果待确认。网络中断不代表任务未执行；这里只查询本次请求，不自动重新提交。";
+  return "连接中断，无法确认复现是否已开始。请点「查询提交结果」，不要重复提交。";
 }
 export function rejectionIsDefinite(error: unknown) {
   return error instanceof RunApiError && [400, 403, 409, 410, 429].includes(error.status ?? 0);
@@ -64,13 +64,13 @@ export function saveDownload(bytes: Uint8Array<ArrayBuffer> | string, name: stri
 
 export function readinessMessage(reason: string | null) {
   const messages: Record<string, string> = {
-    store_not_initialized: "运行数据库尚未初始化，请在项目根目录运行 uv run --frozen agent-workbench runs init。",
-    schema_incompatible: "运行数据库需要升级，请先备份并按文档初始化到当前版本。",
-    store_unavailable: "本机运行数据库暂不可用，请检查本机服务后重新检查。",
-    locking_unavailable: "本机执行锁不可用，请检查服务状态后重新检查。",
-    image_not_prepared: "固定执行镜像尚未准备好，请按文档完成显式准备；网页不会自动构建或下载镜像。",
-    docker_unavailable: "Docker 暂不可用，请启动本机 Docker 后重新检查。",
-    runner_busy: "已有任务占用网页执行槽。请先查看当前运行；若任务中断，请按文档显式核对。",
+    store_not_initialized: "运行数据库尚未初始化。请在项目根目录运行 uv run --frozen agent-workbench runs init，然后重新检查环境。",
+    schema_incompatible: "运行数据库版本过旧。请先备份，再运行 uv run --frozen agent-workbench runs init 升级。",
+    store_unavailable: "无法打开运行数据库。请查看本机服务终端的错误输出。",
+    locking_unavailable: "无法获取运行锁，可能有另一个服务进程在使用同一个数据库。关闭多余的进程后重新检查环境。",
+    image_not_prepared: "缺少复现用的 Docker 镜像。请先在项目根目录运行 uv run --frozen python containers/p0_03/prepare.py。",
+    docker_unavailable: "Docker 未运行。启动 Docker 后重新检查环境。",
+    runner_busy: "已有一个复现在运行，同一时间只能运行一个。等它结束后再开始。",
   };
-  return reason && Object.hasOwn(messages, reason) ? messages[reason] : "本机尚未准备好。请按准备说明检查数据库、Docker 与固定镜像，然后重新检查。";
+  return reason && Object.hasOwn(messages, reason) ? messages[reason] : "本机还不能运行复现。请确认数据库、Docker 和镜像都已就绪，然后重新检查环境。";
 }

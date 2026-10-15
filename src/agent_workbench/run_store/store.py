@@ -32,11 +32,18 @@ from .schema import (
     artifacts,
     attempts,
     events,
+    repair_candidates,
+    repair_comparison_attempts,
+    repair_comparisons,
+    repair_events,
+    repair_requests,
+    repair_tasks,
     runs,
+    web_analysis_requests,
     web_requests,
 )
 
-REVISION = "0003_analyses"
+REVISION = "0007_web_analyses"
 MAX_REPORT = 1_048_576
 TERMINAL = ("succeeded", "failed", "cancelled", "outcome_unknown")
 EXECUTORS = ("absent", "running", "stopped", "unavailable", "mismatch")
@@ -148,18 +155,89 @@ class RunStore:
         if allow_empty and not revisions and names == {"alembic_version"}:
             return
         supported = revisions == [(REVISION,)] or (
-            allow_empty and revisions in ([("0001_run_store",)], [("0002_web_requests",)])
+            allow_empty
+            and revisions
+            in (
+                [("0001_run_store",)],
+                [("0002_web_requests",)],
+                [("0003_analyses",)],
+                [("0004_repairs",)],
+                [("0005_comparisons",)],
+                [("0006_reproductions",)],
+            )
         )
         if not supported or not {"runs", "attempts", "events", "artifacts"} <= names:
             raise StoreError("schema_incompatible")
-        if revisions in ([("0002_web_requests",)], [(REVISION,)]) and "web_requests" not in names:
+        if (
+            revisions
+            in (
+                [("0002_web_requests",)],
+                [("0003_analyses",)],
+                [("0004_repairs",)],
+                [("0005_comparisons",)],
+                [("0006_reproductions",)],
+                [(REVISION,)],
+            )
+            and "web_requests" not in names
+        ):
             raise StoreError("schema_incompatible")
 
         if (
-            revisions == [(REVISION,)]
+            revisions
+            in (
+                [("0003_analyses",)],
+                [("0004_repairs",)],
+                [("0005_comparisons",)],
+                [("0006_reproductions",)],
+                [(REVISION,)],
+            )
             and not {"analysis_summaries", "analysis_events", "analysis_execution_links"} <= names
         ):
             raise StoreError("schema_incompatible")
+
+        if (
+            revisions
+            in (
+                [("0004_repairs",)],
+                [("0005_comparisons",)],
+                [("0006_reproductions",)],
+                [(REVISION,)],
+            )
+            and not {"repair_tasks", "repair_requests", "repair_candidates", "repair_events"}
+            <= names
+        ):
+            raise StoreError("schema_incompatible")
+
+        if (
+            revisions in ([("0005_comparisons",)], [("0006_reproductions",)], [(REVISION,)])
+            and not {"repair_comparisons", "repair_comparison_attempts"} <= names
+        ):
+            raise StoreError("schema_incompatible")
+
+        if revisions in ([("0006_reproductions",)], [(REVISION,)]):
+            if not {"repair_reproductions", "repair_execution_identities"} <= names:
+                raise StoreError("schema_incompatible")
+            from .migrations.versions.v0006 import TRIGGERS
+
+            actual = {
+                row[0]: row[1]
+                for row in connection.exec_driver_sql(
+                    "SELECT name, sql FROM sqlite_master WHERE type='trigger'"
+                )
+            }
+            if any(actual.get(name) != sql for name, sql in TRIGGERS.items()):
+                raise StoreError("schema_incompatible")
+
+        if revisions == [(REVISION,)]:
+            if "web_analysis_requests" not in names:
+                raise StoreError("schema_incompatible")
+            from .migrations.versions.v0007 import INDEX_SQL
+
+            index = connection.exec_driver_sql(
+                "SELECT sql FROM sqlite_master WHERE type='index' AND name='ux_web_analysis_active'"
+            ).scalar()
+            if index != INDEX_SQL:
+                raise StoreError("schema_incompatible")
 
     @staticmethod
     def _migration(connection: Connection) -> Config:
@@ -202,9 +280,16 @@ class RunStore:
                 events,
                 artifacts,
                 web_requests,
+                web_analysis_requests,
                 analysis_summaries,
                 analysis_events,
                 analysis_execution_links,
+                repair_tasks,
+                repair_requests,
+                repair_candidates,
+                repair_events,
+                repair_comparisons,
+                repair_comparison_attempts,
             ):
                 if connection.execute(select(table).limit(1)).first() is not None:
                     raise StoreError("migration_not_empty")

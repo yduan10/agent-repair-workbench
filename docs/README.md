@@ -31,6 +31,8 @@
 | [23 web reproduction delivery](23-p1-01a-delivery.md) | P1-01a 实施、测试与复审记录 | 每批交付与实测结果变化 |
 | [24 P0-05b runtime](24-p0-05b-runtime.md) | 模型预算、五工具、持久分析和只读诊断页 | 当前实现边界与验收变化 |
 | [25 P0-05b delivery](25-p0-05b-delivery.md) | 本批模型实测、A矩阵、评审和剩余边界 | 本批交付与实测结果变化 |
+| [26 P0-06 candidate verification](26-p0-06-candidate-verification.md) | 隔离候选、冻结回归与公平对照的实施设计与分批边界 | 当前设计与分批验收变化 |
+| [27 local development guide](27-local-development-guide.md) | 安装、启动、模型配置、恢复与工程验收 | 可执行命令或环境配置变化 |
 | reviews/ | 文档及代码评审证据 | 每次评审 |
 
 ## 冲突、版本和决策
@@ -49,3 +51,15 @@
 | 2026-10-13 | DOC-03统一Agent/tools职责、自研边界和26项后续验收用例 | 用户要求开发前明确闭环及测试；同步架构当前状态 | 两项设计问题修复复审，见 [DOC-03](reviews/DOC-03-review.md)；不计模型实现完成 |
 
 公开版说明：历史评审中的本机绝对路径已脱敏为 `<project-root>` / `<review-workspaces>`；快照哈希记录的是当时文件，文档脱敏及后续迭代会改变文档哈希。历史代码快照和验收事实不据此重写。
+
+- [28 UI-07 diagnosis density](28-ui-07-analysis-density.md)
+
+- [29：网页分析与执行控制台](29-web-analysis-console.md)
+
+- [30：网页执行交付与实际验收](30-web-analysis-delivery.md)
+
+- [31：隔离修复与冻结回归交付](31-p0-06-delivery.md)
+- [32：产品界面改造规格](32-ui-08-product-redesign.md)
+- [33：产品界面整合验收](33-ui-08-delivery.md)
+
+- [34：网页修复与人工审批设计](34-p1-01-web-repair.md)

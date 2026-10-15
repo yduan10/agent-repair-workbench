@@ -22,7 +22,13 @@ from agent_workbench.analysis_store.store import AnalysisStore
 from agent_workbench.controlled_tools.contracts import ToolDecision, target_key
 from agent_workbench.controlled_tools.resources import TaskResourceRegistry
 from agent_workbench.controlled_tools.runtime import ExecutionContext, ToolRuntime
-from agent_workbench.model_gateway.gateway import Adapter, GatewayError, PreparedCall, canonical
+from agent_workbench.model_gateway.gateway import (
+    Adapter,
+    GatewayError,
+    PreparedCall,
+    canonical,
+    digest,
+)
 from agent_workbench.orchestration.budget import reserve, settle
 from agent_workbench.orchestration.contracts import (
     AnalysisSummary,
@@ -34,6 +40,8 @@ from agent_workbench.orchestration.contracts import (
 )
 from agent_workbench.orchestration.policy import PolicyError, authorize, transition
 from agent_workbench.run_store.models import StoreError
+from agent_workbench.web_analyses.models import AnalysisClaim
+from agent_workbench.web_analyses.store import WebAnalysisStore
 
 
 class Route(TypedDict):
@@ -168,6 +176,10 @@ class AnalysisRuntime:
         )
 
     async def turn(self, role: Role) -> Route:
+        if isinstance(self.store, WebAnalysisStore) and self.store.cancellation_requested(
+            self.summary.task_id
+        ):
+            raise Stop("cancelled", "CANCELLED")
         if self.adapter is None:
             raise Stop("failed", "MODEL_NOT_CONFIGURED")
         self.remaining()
@@ -373,78 +385,120 @@ class AnalysisRuntime:
             else "diagnosis_complete"
         )
 
+    def initial_summary(self) -> AnalysisSummary:
+        """Host-only initial metadata; no model or tool side effect."""
+        task = self.registry.task_spec()
+        return AnalysisSummary(
+            task_id=task.task_id,
+            source_kind=task.source_kind,
+            state=TaskState(task_id=task.task_id, intent=task.intent),
+            started_at=datetime.now(UTC),
+            budget=task.budget,
+            usage=Usage(),
+            evidence_refs=task.evidence,
+        )
+
     async def run(self) -> SaveResult:
         task = self.registry.task_spec()
         with AnalysisFence(self.store.directory, task.task_id) as self.fence:
             self.saved = self.store.create(
-                AnalysisSummary(
-                    task_id=task.task_id,
-                    source_kind=task.source_kind,
-                    state=TaskState(task_id=task.task_id, intent=task.intent),
-                    started_at=datetime.now(UTC),
-                    budget=task.budget,
-                    usage=Usage(),
-                    evidence_refs=task.evidence,
-                ),
+                self.initial_summary(),
                 AnalysisEvent(kind="created"),
                 fence=self.fence,
             )
-            try:
-                self.phase("checking")
-                if task.intent == "check_only":
-                    self.finish("check_complete")
-                    return self.saved
-                self.phase("diagnosing")
-                graph = StateGraph(Route)
+            if self.saved.reused:
+                raise StoreError("analysis_conflict")
+            self.phase("checking")
+            return await self._run_started()
 
-                async def diagnose_node(_: Route) -> Route:
-                    return await self.turn("diagnosis")
-
-                async def repair_node(_: Route) -> Route:
-                    return await self.turn("repair")
-
-                async def verify_node(_: Route) -> Route:
-                    return await self.turn("verification")
-
-                for name, node in (
-                    ("diagnosis", diagnose_node),
-                    ("repair", repair_node),
-                    ("verification", verify_node),
-                ):
-                    graph.add_node(name, RunnableLambda(node))
-                    graph.add_conditional_edges(
-                        name,
-                        lambda state: state["route"],
-                        {
-                            "diagnosis": "diagnosis",
-                            "repair": "repair",
-                            "verification": "verification",
-                            "end": END,
-                        },
-                    )
-                graph.add_edge(START, "diagnosis")
-                with tracing_context(enabled=False):
-                    await graph.compile().ainvoke(
-                        {"route": "diagnosis"}, config={"recursion_limit": 100, "callbacks": []}
-                    )
-            except Stop as stop:
-                self.finish(stop.outcome, stop.code)
-            except (PolicyError, GatewayError) as exc:
-                code = str(exc)
-                safe: ErrorCode = (
-                    "BUDGET_EXCEEDED" if code == "BUDGET_EXCEEDED" else "PERMISSION_DENIED"
-                )
-                self.finish(
-                    "budget_exceeded" if code == "BUDGET_EXCEEDED" else "inconclusive", safe
-                )
-            except asyncio.CancelledError:
-                self.finish("cancelled", "CANCELLED")
-            except StoreError:
-                # Do not overwrite a durable send/claim or pretend a failed save succeeded.
-                raise
-            except Exception:
-                self.finish("outcome_unknown", "INTERNAL_ERROR")
-            finally:
-                self.messages.clear()
-                self.proposal = None
+    async def run_created(
+        self,
+        claim: AnalysisClaim,
+        saved: SaveResult,
+        *,
+        fence: AnalysisFence,
+    ) -> SaveResult:
+        """Browser owner entry; a read/replay result alone never authorizes execution."""
+        if not isinstance(self.store, WebAnalysisStore) or not isinstance(claim, AnalysisClaim):
+            raise StoreError("admission_invalid")
+        task = self.registry.task_spec()
+        summary = saved.summary
+        if (
+            digest(canonical(summary.model_dump(mode="json"))) != saved.sha256
+            or summary.task_id != task.task_id
+            or summary.state.intent != task.intent
+            or summary.source_kind != task.source_kind
+            or summary.budget != task.budget
+            or summary.evidence_refs != task.evidence
+        ):
+            raise StoreError("admission_invalid")
+        # This persistent, one-use transition is outside the execution exception handler:
+        # denied/replayed startup must not alter someone else's live or terminal task.
+        case_name = self.registry.case_name
+        if case_name not in ("output_mismatch", "passing"):
+            # Repair-only cases must not widen the separately admitted web-analysis catalog.
+            raise StoreError("admission_invalid")
+        started = self.store.start_created(claim, saved, fence=fence, case_name=case_name)
+        self.fence, self.saved = fence, started.saved
+        if started.cancel_requested:
+            self.finish("cancelled", "CANCELLED")
             return self.saved
+        return await self._run_started()
+
+    async def _run_started(self) -> SaveResult:
+        try:
+            if self.registry.task_spec().intent == "check_only":
+                self.finish("check_complete")
+                return self.saved
+            self.phase("diagnosing")
+            graph = StateGraph(Route)
+
+            async def diagnose_node(_: Route) -> Route:
+                return await self.turn("diagnosis")
+
+            async def repair_node(_: Route) -> Route:
+                return await self.turn("repair")
+
+            async def verify_node(_: Route) -> Route:
+                return await self.turn("verification")
+
+            for name, node in (
+                ("diagnosis", diagnose_node),
+                ("repair", repair_node),
+                ("verification", verify_node),
+            ):
+                graph.add_node(name, RunnableLambda(node))
+                graph.add_conditional_edges(
+                    name,
+                    lambda state: state["route"],
+                    {
+                        "diagnosis": "diagnosis",
+                        "repair": "repair",
+                        "verification": "verification",
+                        "end": END,
+                    },
+                )
+            graph.add_edge(START, "diagnosis")
+            with tracing_context(enabled=False):
+                await graph.compile().ainvoke(
+                    {"route": "diagnosis"}, config={"recursion_limit": 100, "callbacks": []}
+                )
+        except Stop as stop:
+            self.finish(stop.outcome, stop.code)
+        except (PolicyError, GatewayError) as exc:
+            code = str(exc)
+            safe: ErrorCode = (
+                "BUDGET_EXCEEDED" if code == "BUDGET_EXCEEDED" else "PERMISSION_DENIED"
+            )
+            self.finish("budget_exceeded" if code == "BUDGET_EXCEEDED" else "inconclusive", safe)
+        except asyncio.CancelledError:
+            self.finish("cancelled", "CANCELLED")
+        except StoreError:
+            # Do not overwrite a durable send/claim or pretend a failed save succeeded.
+            raise
+        except Exception:
+            self.finish("outcome_unknown", "INTERNAL_ERROR")
+        finally:
+            self.messages.clear()
+            self.proposal = None
+        return self.saved

@@ -1,0 +1,570 @@
+/* UI-08: environment page styles (环境与接入). */
+
+/* ---------- page + in-page nav ---------- */
+.env-page {
+  max-width: 1040px;
+}
+.env-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: -8px 0 8px;
+}
+.env-toc a {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: var(--r-md);
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 0.12s, color 0.12s;
+}
+.env-toc a:first-child {
+  margin-left: -10px;
+}
+.env-toc a:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+/* ---------- sections ---------- */
+.env-section {
+  padding-top: 32px;
+  scroll-margin-top: 16px;
+}
+.env-section + .env-section {
+  margin-top: 8px;
+}
+.env-section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px 16px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.env-section-head h2 {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+.env-section-head p {
+  margin-top: 2px;
+  max-width: 68ch;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.env-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.env-section > .callout {
+  margin-top: 12px;
+}
+
+/* ---------- settings rows ---------- */
+.setting-row {
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1fr) auto;
+  gap: 6px 20px;
+  align-items: start;
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+}
+.setting-row:first-child {
+  border-top: 0;
+}
+.setting-label {
+  padding-top: 1px;
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 550;
+}
+.setting-value {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  min-width: 0;
+  font-size: var(--fs-sm);
+}
+.setting-aside {
+  justify-self: end;
+}
+
+.env-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 24px;
+  margin: 0;
+}
+.env-facts > div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.env-facts dt {
+  color: var(--text-3);
+}
+.env-facts dd {
+  margin: 0;
+}
+.env-facts code,
+.env-cli-head code {
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+.env-fix {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border-left: 2px solid var(--border-strong);
+  background: var(--surface-2);
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+}
+.env-fix p {
+  color: var(--text);
+}
+.env-fix .env-command {
+  background: var(--surface);
+}
+
+.env-more summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent-text);
+  font-size: var(--fs-xs);
+  cursor: pointer;
+  list-style: none;
+}
+.env-more summary::-webkit-details-marker {
+  display: none;
+}
+.env-more summary::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  margin-right: 2px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.15s var(--ease-out);
+}
+.env-more[open] summary::before {
+  transform: rotate(45deg);
+}
+.env-more[open] {
+  display: grid;
+  gap: 8px;
+}
+
+/* execution slots */
+.env-slots {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.env-slots li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+}
+.env-slot-name {
+  min-width: 2.5em;
+  color: var(--text);
+}
+.env-slot-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+}
+.env-slot-note {
+  margin-top: 2px;
+}
+
+/* ---------- commands ---------- */
+.env-command {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  padding: 5px 4px 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--code-bg);
+}
+.env-command code {
+  flex: 1;
+  min-width: 0;
+  padding-top: 2px;
+  color: var(--code-text);
+  font-size: 12.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.env-command .btn,
+.env-copy-code .btn {
+  flex-shrink: 0;
+  color: var(--text-3);
+}
+.env-command .btn:hover,
+.env-copy-code .btn:hover {
+  color: var(--text);
+}
+.env-copy-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  padding: 0 0 0 7px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  vertical-align: middle;
+}
+.env-copy-code code {
+  color: var(--text);
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+.env-copy-code .btn-icon.btn-sm {
+  width: 24px;
+  height: 24px;
+}
+.env-inline-note {
+  margin-left: 10px;
+}
+
+.env-commands {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.env-commands li {
+  display: grid;
+  gap: 4px;
+}
+
+/* model variables */
+.env-vars {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+.env-vars th,
+.env-vars td {
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+}
+.env-vars tbody tr:first-child th,
+.env-vars tbody tr:first-child td {
+  border-top: 0;
+}
+.env-vars th {
+  width: 1%;
+  padding-right: 16px;
+  white-space: nowrap;
+  font-weight: 400;
+}
+.env-vars td {
+  color: var(--text-2);
+}
+
+/* cli */
+.env-cli-item {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+}
+.env-cli-item:first-child {
+  border-top: 0;
+}
+.env-cli-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-size: var(--fs-sm);
+}
+.env-cli-head code {
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+/* ---------- agent contracts ---------- */
+.contracts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+.contracts-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.contracts-group-title {
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1.1fr) minmax(0, 1fr) 88px;
+  gap: 8px 20px;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 550;
+}
+.contracts-group-title h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.contracts-group-title h3 .count {
+  font-weight: 500;
+}
+.contract-refs-label {
+  display: none;
+}
+.contract-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.contract-item {
+  border-top: 1px solid var(--border);
+}
+.contract-item:first-child {
+  border-top: 0;
+}
+.contract-row {
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1.1fr) minmax(0, 1fr) 88px;
+  gap: 8px 20px;
+  align-items: start;
+  padding: 14px 16px;
+}
+.contract-name {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.contract-name strong {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.contract-name code {
+  color: var(--text-3);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.contract-desc {
+  display: grid;
+  gap: 4px;
+  font-size: var(--fs-sm);
+}
+.contract-boundary {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+}
+.contract-boundary svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: var(--text-3);
+}
+.contract-refs {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 7px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+}
+.contract-action {
+  justify-self: end;
+}
+.contract-toggle svg {
+  transition: transform 0.15s var(--ease-out);
+}
+.contract-toggle[aria-expanded="true"] {
+  color: var(--text);
+}
+.contract-toggle[aria-expanded="true"] svg {
+  transform: rotate(90deg);
+}
+.contract-schema {
+  margin: 0 16px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--code-bg);
+  overflow: hidden;
+}
+.contract-schema[hidden] {
+  display: none;
+}
+.contract-schema-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 34px;
+  padding: 2px 4px 2px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.contract-schema-actions {
+  display: flex;
+  gap: 2px;
+}
+.contract-schema pre {
+  max-height: 360px;
+  margin: 0;
+  padding: 10px 12px;
+  overflow: auto;
+  color: var(--code-text);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 1100px) {
+  .contracts-group-title {
+    display: flex;
+  }
+  .contracts-col {
+    display: none;
+  }
+  .contract-refs-label {
+    display: block;
+    color: var(--text-3);
+    font-size: var(--fs-xs);
+  }
+  .contract-row {
+    grid-template-columns: 132px minmax(0, 1fr) auto;
+  }
+  .contract-refs {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .contract-action {
+    grid-column: 3;
+    grid-row: 1;
+  }
+}
+@media (max-width: 900px) {
+  .env-toc {
+    display: none;
+  }
+  .env-section {
+    scroll-margin-top: 64px;
+  }
+}
+@media (max-width: 640px) {
+  .setting-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 12px 14px;
+  }
+  .setting-label {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .setting-aside {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .setting-value {
+    grid-column: 1 / -1;
+  }
+  .contract-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 12px 14px;
+  }
+  .contract-name {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .contract-action {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .contract-desc,
+  .contract-refs {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+  .contract-schema {
+    margin: 0 14px 12px;
+  }
+  .env-cli-item {
+    padding: 12px 14px;
+  }
+  .env-cli-head {
+    flex-direction: column;
+    gap: 2px;
+  }
+  .env-section-actions > .btn-ghost:first-child {
+    margin-left: -8px;
+  }
+  .env-inline-note {
+    display: block;
+    margin: 4px 0 0;
+  }
+  .env-vars th,
+  .env-vars td {
+    display: block;
+    width: auto;
+    padding: 0;
+    border: 0;
+  }
+  .env-vars tr {
+    display: grid;
+    gap: 2px;
+    padding: 8px 0;
+    border-top: 1px solid var(--border);
+  }
+  .env-vars tbody tr:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+}

@@ -203,6 +203,59 @@ def decode_reply(raw: bytes, request: PreparedCall) -> Reply:
         return Reply(error="MODEL_RESPONSE_INVALID")
 
 
+def prepare_decision_call(
+    config: Config,
+    config_sha256: str,
+    schema: dict[str, Any],
+    messages: list[dict[str, str]],
+    output_cap: int,
+    role_limit: int,
+) -> PreparedCall:
+    """Build a bounded call from a host-owned schema; never mutate the schema cache."""
+    if (
+        type(output_cap) is not int
+        or not 1 <= output_cap <= 32768
+        or type(role_limit) is not int
+        or not 1 <= role_limit <= 32768
+    ):
+        raise GatewayError("BUDGET_EXCEEDED")
+    output = min(role_limit, output_cap)
+    schema = dict(schema)
+    parameters = {
+        "type": "object",
+        "$defs": schema.pop("$defs", {}),
+        "properties": {"decision": schema},
+        "required": ["decision"],
+        "additionalProperties": False,
+    }
+    body = canonical(
+        {
+            "model": config.model,
+            "messages": messages,
+            "stream": False,
+            "max_tokens": output,
+            "thinking": {"type": "disabled"},
+            "tools": [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "emit_decision",
+                        "description": "Return one host-validated decision",
+                        "parameters": parameters,
+                    },
+                }
+            ],
+            "tool_choice": {"type": "function", "function": {"name": "emit_decision"}},
+        }
+    )
+    if len(body) > 65536:
+        raise GatewayError("MODEL_RESPONSE_INVALID")
+    reservation_hash = digest(
+        canonical({"config": config_sha256, "input": INPUT_BOUND, "output": output})
+    )
+    return PreparedCall(body, digest(body), INPUT_BOUND, output, reservation_hash)
+
+
 class DeepSeekAdapter:
     def __init__(self, config: Config, *, transport: httpx.AsyncBaseTransport | None = None):
         self._config = config
@@ -213,47 +266,14 @@ class DeepSeekAdapter:
         return self._config.sha256
 
     def prepare(self, role: Role, messages: list[dict[str, str]], output_cap: int) -> PreparedCall:
-        if type(output_cap) is not int or not 1 <= output_cap <= 32768:
-            raise GatewayError("BUDGET_EXCEEDED")
-        output = min(ROLE_OUTPUT[role], output_cap)
         schema = {
             "diagnosis": DIAGNOSIS_ADAPTER.json_schema(),
             "repair": REPAIR_ADAPTER.json_schema(),
             "verification": VERIFICATION_ADAPTER.json_schema(),
         }[role]
-        parameters = {
-            "type": "object",
-            "$defs": schema.pop("$defs", {}),
-            "properties": {"decision": schema},
-            "required": ["decision"],
-            "additionalProperties": False,
-        }
-        body = canonical(
-            {
-                "model": self._config.model,
-                "messages": messages,
-                "stream": False,
-                "max_tokens": output,
-                "thinking": {"type": "disabled"},
-                "tools": [
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": "emit_decision",
-                            "description": "Return one host-validated decision",
-                            "parameters": parameters,
-                        },
-                    }
-                ],
-                "tool_choice": {"type": "function", "function": {"name": "emit_decision"}},
-            }
+        return prepare_decision_call(
+            self._config, self.config_sha256, schema, messages, output_cap, ROLE_OUTPUT[role]
         )
-        if len(body) > 65536:
-            raise GatewayError("MODEL_RESPONSE_INVALID")
-        reservation_hash = digest(
-            canonical({"config": self.config_sha256, "input": INPUT_BOUND, "output": output})
-        )
-        return PreparedCall(body, digest(body), INPUT_BOUND, output, reservation_hash)
 
     async def send(self, request: PreparedCall, timeout: float) -> Reply:
         if not 0 < timeout <= 600:

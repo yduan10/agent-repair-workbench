@@ -1,12 +1,52 @@
-export const documentationEntries = [
-  { title: "安装与启动", slug: "getting-started", summary: "本地安装、服务启动和 CLI 使用。" },
-  { title: "产品范围与约束", slug: "01-constraints", summary: "目标用户、支持范围和工程边界。" },
-  { title: "架构与技术决策", slug: "02-architecture", summary: "组件边界、数据流和技术选型。" },
-  { title: "P0 / P1 迭代计划", slug: "03-roadmap", summary: "任务依赖、当前进度与验收依据。" },
-  { title: "Agent、工具与测试用例", slug: "17-agent-tools-testing-plan", summary: "角色职责、工具设计和逐项测试方案。" },
-  { title: "Agent 契约验收记录", slug: "19-p0-05a-delivery", summary: "当前实现、实际测试与剩余工作。" },
-  { title: "模型协作与验收记录", slug: "25-p0-05b-delivery", summary: "真实模型过程、预算、测试与当前能力边界。" },
-  { title: "完整工程文档目录", slug: "index", summary: "全部规格、执行隔离、恢复与质量门禁。" },
+/** Documentation index shown on /docs and in the reader sidebar.
+ * The user guide comes first; internal engineering records are grouped under 「工程记录」.
+ */
+export type DocumentationEntry = { title: string; slug: string; summary: string };
+export type DocumentationGroup = { id: string; title: string; description: string; entries: readonly DocumentationEntry[] };
+
+export const documentationGroups: readonly DocumentationGroup[] = [
+  {
+    id: "guide",
+    title: "使用指南",
+    description: "安装、启动和每个功能的用法。",
+    entries: [
+      { title: "项目介绍与快速上手", slug: "getting-started", summary: "解决什么问题、一个具体例子，以及第一次检查的命令。" },
+      { title: "本地运行指南", slug: "27-local-development-guide", summary: "启动网页、配置模型、准备 Docker 镜像、运行记录的备份与恢复。" },
+    ],
+  },
+  {
+    id: "reference",
+    title: "参考",
+    description: "支持范围、架构和各模块的规则。",
+    entries: [
+      { title: "产品范围与约束", slug: "01-constraints", summary: "面向谁、支持什么、明确不做什么。" },
+      { title: "架构与技术决策", slug: "02-architecture", summary: "组件边界、数据流和技术选型。" },
+      { title: "调用检查规则", slug: "05-contract-checker", summary: "调用证据的格式、检查项、错误代码和退出码。" },
+      { title: "复现容器的隔离策略", slug: "11-controlled-execution", summary: "容器限制、输出上限、取消与「结果未知」的含义。" },
+      { title: "Agent 角色、工具与测试", slug: "17-agent-tools-testing-plan", summary: "三个角色的职责、可用工具和逐项测试方案。" },
+    ],
+  },
+  {
+    id: "records",
+    title: "工程记录",
+    description: "开发过程中的计划、规格、交付和评审记录，内容停留在写作当时；当前功能以更新记录为准。",
+    entries: [
+      { title: "开发计划与验收台账", slug: "03-roadmap", summary: "任务依赖、状态与验收依据。" },
+      { title: "隔离修复交付记录", slug: "31-p0-06-delivery", summary: "候选、回归与真实模型试验的结果。" },
+      { title: "隔离候选与回归规格", slug: "26-p0-06-candidate-verification", summary: "候选生成、冻结检查项与判定规则。" },
+      { title: "网页执行交付记录", slug: "30-web-analysis-delivery", summary: "网页开始与停止、证据阅读的验收。" },
+      { title: "模型协作交付记录", slug: "25-p0-05b-delivery", summary: "三角色协作、预算与真实模型运行。" },
+      { title: "角色契约交付记录", slug: "19-p0-05a-delivery", summary: "角色与工具契约的实现和测试。" },
+      { title: "完整文档目录", slug: "index", summary: "全部规格、交付和独立评审记录。" },
+    ],
+  },
 ];
+
+export const documentationEntries: readonly DocumentationEntry[] = documentationGroups.flatMap(group => group.entries);
+
+/** Group a document belongs to; unlisted documents (specs, reviews) are engineering records. */
+export function documentationGroupOf(slug: string): DocumentationGroup {
+  return documentationGroups.find(group => group.entries.some(entry => entry.slug === slug)) ?? documentationGroups[documentationGroups.length - 1];
+}
 
 export const documentationUrl = (slug: string) => `/docs/${slug.split("/").map(encodeURIComponent).join("/")}`;

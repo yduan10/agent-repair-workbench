@@ -94,3 +94,9 @@ Starlette TestClient 对 httpx 发出弃用提示，当前测试仍通过；后�
 - 引入时 `npm audit --omit=dev` 0 已知漏洞；npm install 全树审计亦为0。官方说明：[react-markdown](https://github.com/remarkjs/react-markdown)、[remark-gfm](https://github.com/remarkjs/remark-gfm)。
 
 - Mermaid 12.2.0（MIT）：仅图表页客户端惰性加载，严格模式，禁用HTML标签；支持受版本控制的flowchart，配置指令、图片形状和链接动作回退源码，不开放用户上传图表。生成SVG作为无脚本图片展示；渲染失败仍可读源码。主题变更重绘，异步结果按组件生命周期与版本隔离。安装后全树审计0已知漏洞。官方说明：[Mermaid](https://mermaid.js.org/config/usage.html)。
+
+### UI-08（2026-10-15，用户确认）
+
+- geist 1.7.2（SIL OFL 1.1 字体 / MIT 包装）：Geist Sans 与 Geist Mono 通过 `next/font/local` 随构建自托管，不在运行时请求外部字体服务，离线可用。中文继续使用系统字体。
+- CodeMirror 6（MIT）：@codemirror/state 6.7.6、view 6.43.14、language 6.13.1、commands 6.11.1、lang-json 6.0.2、lint 6.9.7。仅调用检查页动态加载，用于行号、JSON 语法提示与问题定位；不改变提交给检查器的原始文本。
+- 引入时 `npm audit --omit=dev` 0 已知漏洞。

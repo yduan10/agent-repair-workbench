@@ -4,12 +4,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ArrowLeft, ArrowUpRight, BookOpen } from "lucide-react";
-import ThemeControl from "../../../components/theme-control";
+import SiteFooter, { DocsNav, SiteHeader } from "../../../components/project-resources";
 import DocumentDiagram from "../../../components/document-diagram";
-import { documentationEntries, documentationUrl } from "../../../lib/documentation";
+import { documentationEntries, documentationGroupOf, documentationUrl } from "../../../lib/documentation";
 import { documentLink, documentSections, projectDocuments } from "../../../lib/docs.server";
-import { repositoryUrl } from "../../../lib/project";
+import { sourceDocument } from "../../../lib/project";
 
 type Props = { params: Promise<{ slug: string[] }> };
 export const dynamicParams = false;
@@ -17,7 +16,7 @@ export function generateStaticParams() { return projectDocuments().map(doc => ({
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const doc = projectDocuments().find(item => item.slug === slug.join("/"));
-  return { title: doc ? `${doc.title} · Agent 修复台文档` : "未找到文档" };
+  return { title: doc ? `${doc.title} · 文档` : "未找到文档" };
 }
 
 export default async function DocumentPage({ params }: Props) {
@@ -27,18 +26,27 @@ export default async function DocumentPage({ params }: Props) {
   const sections = documentSections(doc.content);
   const body = doc.content.replace(/^#\s+.+$/m, "");
   const headingId = (line?: number) => sections.find(section => section.line === line)?.id;
+  const group = documentationGroupOf(doc.slug);
   const current = documentationEntries.findIndex(entry => entry.slug === doc.slug);
   const next = current >= 0 ? documentationEntries[current + 1] : undefined;
-  return <div className="document-page">
-    <a className="skip" href="#document-main">跳至文档正文</a>
-    <header className="document-header"><Link href="/" className="text-link"><ArrowLeft size={16} aria-hidden="true" />Agent 修复台</Link><Link href="/docs" className="document-header-label"><BookOpen size={17} aria-hidden="true" />项目文档</Link><ThemeControl /><Link href="/workbench" className="nav-cta">打开调用检查<ArrowUpRight size={15} aria-hidden="true" /></Link></header>
-    <div className="document-layout">
-      <aside className="document-sidebar"><nav aria-label="工程文档导航"><Link href="/docs">文档首页</Link>{documentationEntries.map(entry => <Link key={entry.slug} href={documentationUrl(entry.slug)} aria-current={entry.slug === doc.slug ? "page" : undefined}>{entry.title}</Link>)}</nav><div className="document-source"><span>开发中的项目</span><p>实现状态以迭代计划为准，历史评审保留当时的范围。</p><a href={repositoryUrl} target="_blank" rel="noopener noreferrer">GitHub 源码 ↗</a></div></aside>
-      <main id="document-main" className="document-content">
-        <div className="document-breadcrumb"><Link href="/docs">项目文档</Link><span aria-hidden="true">/</span><span>{doc.source.startsWith("docs/reviews/") ? "独立评审" : "工程参考"}</span></div>
-        <h1>{doc.title}</h1>
-        <details className="document-mobile-toc"><summary>本页章节</summary><nav aria-label="本页章节（移动版）">{sections.map(section => <a key={section.id} href={`#${section.id}`}>{section.title}</a>)}</nav></details>
-        <article className="markdown-document">
+  const toc = (label: string) => <nav aria-label={label}>
+    {sections.map(section => <a className={section.depth === 3 ? "doc-toc-child" : undefined} href={`#${section.id}`} key={section.id}>{section.title}</a>)}
+  </nav>;
+  return <div className="site">
+    <SiteHeader current="docs" />
+    <div className="doc-layout">
+      <aside className="doc-sidebar"><DocsNav current={doc.slug} /></aside>
+      <main id="main" className="doc-main">
+        <nav className="doc-breadcrumb" aria-label="当前位置">
+          <Link href="/docs">文档</Link><span aria-hidden="true">/</span><Link href={`/docs#${group.id}`}>{group.title}</Link>
+        </nav>
+        <h1 className="doc-title">{doc.title}</h1>
+        {group.id === "records" && <p className="doc-record-note">工程记录：内容停留在写作当时，当前功能以<Link className="link" href="/updates">更新记录</Link>为准。</p>}
+        <div className="doc-mobile">
+          <details className="doc-mobile-nav"><summary>文档目录</summary><DocsNav current={doc.slug} label="文档目录（移动版）" /></details>
+          {sections.length > 0 && <details className="doc-mobile-toc"><summary>本页章节</summary>{toc("本页章节（移动版）")}</details>}
+        </div>
+        <article className="doc-prose">
           <Markdown remarkPlugins={[remarkGfm]} skipHtml components={{
             h1: ({ children }) => <h2>{children}</h2>,
             h2: ({ children, node }) => <h2 id={headingId(node?.position?.start.line)}>{children}</h2>,
@@ -50,15 +58,18 @@ export default async function DocumentPage({ params }: Props) {
             },
             pre: ({ children }) => isValidElement<{ className?: string; children?: ReactNode }>(children) && children.props.className === "language-mermaid"
               ? <DocumentDiagram source={String(children.props.children ?? "")} />
-              : <pre tabIndex={0} role="region" aria-label="代码示例，可横向滚动">{children}</pre>,
-            table: ({ children }) => <div className="markdown-table" tabIndex={0} role="region" aria-label="文档表格，可横向滚动"><table>{children}</table></div>,
+              : <pre tabIndex={0} role="region" aria-label="代码示例，可横向滚动" translate="no">{children}</pre>,
+            table: ({ children }) => <div className="doc-table" tabIndex={0} role="region" aria-label="文档表格，可横向滚动"><table>{children}</table></div>,
             img: ({ alt }) => <span>{alt}</span>,
           }}>{body}</Markdown>
         </article>
-        {next && <Link href={documentationUrl(next.slug)} className="document-next"><span>继续阅读</span><strong>{next.title}<ArrowUpRight size={18} aria-hidden="true" /></strong></Link>}
+        <footer className="doc-foot">
+          {next && <Link href={documentationUrl(next.slug)} className="doc-next"><span>下一篇</span><strong>{next.title}</strong></Link>}
+          <a className="doc-source" href={sourceDocument(doc.source)} target="_blank" rel="noopener noreferrer">在 GitHub 上查看原文<span className="sr-only">（新标签页）</span></a>
+        </footer>
       </main>
-      <aside className="document-toc"><span>本页章节</span><nav aria-label="本页章节">{sections.map(section => <a className={section.depth === 3 ? "toc-child" : undefined} href={`#${section.id}`} key={section.id}>{section.title}</a>)}</nav></aside>
+      {sections.length > 0 && <aside className="doc-toc"><p className="doc-toc-label" aria-hidden="true">本页章节</p>{toc("本页章节")}</aside>}
     </div>
-    <footer className="product-footer"><Link href="/docs">文档首页</Link><Link href="/updates">开发记录</Link><a href={repositoryUrl} target="_blank" rel="noopener noreferrer">GitHub 源码 ↗</a></footer>
+    <SiteFooter />
   </div>;
 }

@@ -8,8 +8,22 @@ if (!/^\d{4,5}$/.test(apiPort) || Number(apiPort) < 1024 || Number(apiPort) > 65
 const config: NextConfig = {
   poweredByHeader: false,
   turbopack: { root: path.resolve(process.cwd(), "..") },
+  async redirects() {
+    return [
+      { source: "/workspace/regression", destination: "/workspace/repairs?tab=regression", permanent: false },
+      { source: "/workspace/memory", destination: "/workspace", permanent: false },
+    ];
+  },
   async rewrites() {
     return [
+      { source: "/api/repairs", destination: `http://127.0.0.1:${apiPort}/api/repairs` },
+      { source: "/api/repairs/:id([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})", destination: `http://127.0.0.1:${apiPort}/api/repairs/:id` },
+      { source: "/api/repairs/:id([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/candidates/:candidate([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/diff", destination: `http://127.0.0.1:${apiPort}/api/repairs/:id/candidates/:candidate/diff` },
+      { source: "/api/repairs/:id([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/comparisons/:comparison([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})", destination: `http://127.0.0.1:${apiPort}/api/repairs/:id/comparisons/:comparison` },
+      { source: "/api/analysis-runs/catalog", destination: `http://127.0.0.1:${apiPort}/api/analysis-runs/catalog` },
+      { source: "/api/analysis-runs", destination: `http://127.0.0.1:${apiPort}/api/analysis-runs` },
+      { source: "/api/analysis-runs/:id([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/cancel", destination: `http://127.0.0.1:${apiPort}/api/analysis-runs/:id/cancel` },
+      { source: "/api/analyses/:id([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/evidence", destination: `http://127.0.0.1:${apiPort}/api/analyses/:id/evidence` },
       { source: "/api/analyses", destination: `http://127.0.0.1:${apiPort}/api/analyses` },
       { source: "/api/analyses/:id([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})", destination: `http://127.0.0.1:${apiPort}/api/analyses/:id` },
       { source: "/api/reproductions/catalog", destination: `http://127.0.0.1:${apiPort}/api/reproductions/catalog` },

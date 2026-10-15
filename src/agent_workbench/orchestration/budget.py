@@ -1,22 +1,25 @@
 """Pure token accounting. A reservation is not a measured token charge."""
 
 from agent_workbench.model_gateway.gateway import PreparedCall, Reply
-from agent_workbench.orchestration.contracts import AnalysisSummary, Usage
+from agent_workbench.orchestration.contracts import AnalysisSummary, Budget, Usage
 from agent_workbench.orchestration.policy import PolicyError
 
 
 def reserve(summary: AnalysisSummary, request: PreparedCall) -> Usage:
-    current = summary.usage
+    return reserve_usage(summary.budget, summary.usage, request)
+
+
+def reserve_usage(budget: Budget, current: Usage, request: PreparedCall) -> Usage:
     if (
         not current.usage_complete
-        or current.model_calls >= summary.budget.model_calls
-        or request.output_reserved > summary.budget.output_tokens
+        or current.model_calls >= budget.model_calls
+        or request.output_reserved > budget.output_tokens
         or min(request.input_reserved, request.output_reserved) < 0
         or request.input_reserved
         + request.output_reserved
         + current.known_input_tokens
         + current.known_output_tokens
-        > summary.budget.total_tokens
+        > budget.total_tokens
     ):
         raise PolicyError("BUDGET_EXCEEDED")
     return Usage(
