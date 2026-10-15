@@ -20,7 +20,7 @@ export const changelog: readonly ChangelogDay[] = [
         slug: "repair-documentation",
         title: "补充网页修复接入说明",
         changes: [
-          "站内文档新增请求去重、停止处理和故障恢复的实现进度与使用边界。",
+          "站内文档补充请求去重、停止处理和恢复检查的实现进度，可查看哪些情况需要保留待恢复状态。",
         ],
         limit: "网页修复仍用于查看结果，发起修复继续使用 CLI。",
       },

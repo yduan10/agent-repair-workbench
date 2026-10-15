@@ -218,17 +218,21 @@ def test_verified_terminal_history_not_rewritten(repro):
 
 def test_new_owner_between_cleanup_and_reconcile_does_not_claim_success(repro, monkeypatch):
     r, store, fake, pending = setup(repro)
-    original = store.reconcile_reproduction
+    original = store.reconcile_reproduction_held
 
     def takeover(task_id, **kwargs):
-        with RepairFence(store.directory, task_id):
-            return original(task_id, **kwargs)
+        from agent_workbench.run_store.models import StoreError
 
-    monkeypatch.setattr(store, "reconcile_reproduction", takeover)
+        with pytest.raises(StoreError, match="repair_busy"):
+            with RepairFence(store.directory, task_id):
+                pass
+        return original(task_id, **kwargs)
+
+    monkeypatch.setattr(store, "reconcile_reproduction_held", takeover)
     report = run(store, fake, r[5], pending.task.task_id, True)
-    assert report.exit_code() == 2 and report.requires_reconcile
-    assert report.error == "OWNER_ACTIVE" and report.resources[0].state == "removed"
-    assert store.get(pending.task.task_id).task == pending.task
+    assert report.exit_code() == 0 and not report.requires_reconcile
+    assert report.error is None and report.resources[0].state == "removed"
+    assert store.get(pending.task.task_id).task.outcome == "outcome_unknown"
     store.close()
 
 
@@ -311,14 +315,14 @@ def test_cli_defaults_to_inspect_and_sanitizes_invalid_input(repro, monkeypatch,
 
 def test_stale_revision_after_cleanup_cannot_overwrite_new_ledger(repro, monkeypatch):
     r, store, fake, pending = setup(repro)
-    original = store.reconcile_reproduction
+    original = store.reconcile_reproduction_held
     newer = []
 
     def competing_recovery(task_id, **kwargs):
         newer.append(original(task_id, **kwargs))
         return original(task_id, **kwargs)
 
-    monkeypatch.setattr(store, "reconcile_reproduction", competing_recovery)
+    monkeypatch.setattr(store, "reconcile_reproduction_held", competing_recovery)
     report = run(store, fake, r[5], pending.task.task_id, True)
     assert report.error == "RECOVERY_UNCONFIRMED" and report.requires_reconcile
     assert not report.ledger_reconciled and store.get(pending.task.task_id).task == newer[0].task

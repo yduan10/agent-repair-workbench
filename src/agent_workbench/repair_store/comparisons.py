@@ -473,37 +473,48 @@ class ComparisonStore(RepairStore):
     def reconcile_comparison(
         self, task_id: str, *, expected_revision: int, expected_sha256: str
     ) -> ComparisonMutation:
-        with RepairFence(self.directory, _uuid(task_id)):
-            with self._base._transaction(write=True) as connection:
-                task, requests, _ = self._read(connection, task_id)
-                self._cas(task, expected_revision, expected_sha256)
-                req = next(
-                    (
-                        r
-                        for r in requests.values()
-                        if r.operation == "comparison" and r.status == "pending"
-                    ),
-                    None,
+        with RepairFence(self.directory, _uuid(task_id)) as fence:
+            return self.reconcile_comparison_held(
+                task_id,
+                expected_revision=expected_revision,
+                expected_sha256=expected_sha256,
+                fence=fence,
+            )
+
+    def reconcile_comparison_held(
+        self, task_id: str, *, expected_revision: int, expected_sha256: str, fence: RepairFence
+    ) -> ComparisonMutation:
+        fence.require(self.directory, _uuid(task_id))
+        with self._base._transaction(write=True) as connection:
+            task, requests, _ = self._read(connection, task_id)
+            self._cas(task, expected_revision, expected_sha256)
+            req = next(
+                (
+                    r
+                    for r in requests.values()
+                    if r.operation == "comparison" and r.status == "pending"
+                ),
+                None,
+            )
+            if req is None:
+                raise StoreError("comparison_not_pending")
+            record = _records(connection, task_id)[req.request_id]
+            record = _new(record, status="outcome_unknown", finished_at=self._now())
+            self._put_comparison(connection, record)
+            connection.execute(
+                update(attempts)
+                .where(
+                    attempts.c.comparison_id == record.plan.comparison_id,
+                    attempts.c.status == "admitted",
                 )
-                if req is None:
-                    raise StoreError("comparison_not_pending")
-                record = _records(connection, task_id)[req.request_id]
-                record = _new(record, status="outcome_unknown", finished_at=self._now())
-                self._put_comparison(connection, record)
-                connection.execute(
-                    update(attempts)
-                    .where(
-                        attempts.c.comparison_id == record.plan.comparison_id,
-                        attempts.c.status == "admitted",
-                    )
-                    .values(status="unknown")
-                )
-                req = _new(req, status="outcome_unknown", error_code="INTERRUPTED")
-                new = _new(
-                    task,
-                    phase="finished",
-                    outcome="outcome_unknown",
-                    error_code="INTERRUPTED",
-                    finished_at=self._now(),
-                )
-                return _result(self._commit(connection, task, new, "reconciled", req), record)
+                .values(status="unknown")
+            )
+            req = _new(req, status="outcome_unknown", error_code="INTERRUPTED")
+            new = _new(
+                task,
+                phase="finished",
+                outcome="outcome_unknown",
+                error_code="INTERRUPTED",
+                finished_at=self._now(),
+            )
+            return _result(self._commit(connection, task, new, "reconciled", req), record)

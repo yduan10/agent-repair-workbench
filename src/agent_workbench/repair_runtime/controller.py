@@ -4,18 +4,21 @@ import asyncio
 import math
 import time
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal, TypedDict
 from uuid import uuid4
 
+import anyio
 from langchain_core.runnables import RunnableLambda
 from langgraph.graph import END, START, StateGraph
 from langsmith import tracing_context
 from pydantic import JsonValue
 
 from agent_workbench.analysis_store.models import ErrorCode
+from agent_workbench.candidate_execution.docker import verified_image
+from agent_workbench.candidate_execution.oracle import verify_oracle
 from agent_workbench.candidates.snapshots import SnapshotHandle, SnapshotStore
 from agent_workbench.controlled_tools.contracts import target_key
 from agent_workbench.controlled_tools.resources import TaskResourceRegistry
@@ -32,6 +35,9 @@ from agent_workbench.repair_store.fencing import RepairFence
 from agent_workbench.repair_store.models import Mutation, Outcome, RepairTask
 from agent_workbench.repair_store.reproductions import ReproductionStore
 from agent_workbench.run_store.models import StoreError
+from agent_workbench.web_repairs.models import RepairAdmissionClaim
+from agent_workbench.web_repairs.policy import policy_sha256
+from agent_workbench.web_repairs.store import WebRepairStore
 
 from .context import context
 from .tools import _CAS, PENDING, RepairToolBridge
@@ -69,6 +75,8 @@ class RepairController:
         self.store, self.snapshots, self.baseline = store, snapshots, baseline
         self.registry, self.adapter, self.mode = registry, adapter, mode
         self.image_root, self.clock = image_root, clock
+        self._web_store: WebRepairStore | None = None
+        self._last_wall: float | None = None
         self._used = False
         self._materials: dict[str, dict[str, JsonValue]] = {}
         self._completed_reads: dict[str, dict[str, JsonValue]] = {}
@@ -93,7 +101,15 @@ class RepairController:
         )
 
     def remaining(self) -> float:
+        self._check_cancelled()
         value = self.deadline - self.clock()
+        if self._web_store is not None:
+            now = self._web_store._now().timestamp()
+            started = self.cursor.task.started_at.timestamp()
+            if now < started or (self._last_wall is not None and now < self._last_wall):
+                raise Halt("outcome_unknown", "PERSISTENCE_FAILED")
+            self._last_wall = now
+            value = min(value, started + self.cursor.task.budget.timeout_seconds - now)
         if not math.isfinite(value) or value <= 0:
             raise Halt("budget_exceeded", "DEADLINE_EXCEEDED")
         return value
@@ -115,7 +131,11 @@ class RepairController:
 
     def _check_cancelled(self) -> None:
         task = asyncio.current_task()
-        if task is not None and task.cancelling():
+        requested = (
+            self._web_store is not None
+            and self._web_store.receipt(self.cursor.task.task_id).cancel_requested
+        )
+        if requested or (task is not None and task.cancelling()):
             self._cancelled = True
             raise Halt("cancelled", "CANCELLED")
 
@@ -271,10 +291,7 @@ class RepairController:
                 self._role = "repair"
         return {"route": "continue"}
 
-    async def run(self) -> RepairResult:
-        if self._used:
-            raise StoreError("repair_id_conflict")
-        self._used = True
+    def _validate_resources(self) -> None:
         spec = self.registry.task_spec()
         profile = validate_baseline_binding(self.baseline.ref)
         if (
@@ -286,6 +303,13 @@ class RepairController:
         self.snapshots.verify(self.baseline)
         if self.baseline.ref.file_sha256 != self.registry.source_sha256():
             raise ResourceError("ARTIFACT_MISMATCH")
+
+    async def run(self) -> RepairResult:
+        if self._used:
+            raise StoreError("repair_id_conflict")
+        self._used = True
+        self._validate_resources()
+        spec = self.registry.task_spec()
         with RepairFence(self.store.directory, spec.task_id) as self.fence:
             task = RepairTask(
                 task_id=spec.task_id,
@@ -297,49 +321,127 @@ class RepairController:
             )
             self.cursor = self.store.create_task(task, fence=self.fence)
             self.deadline = self.clock() + task.budget.timeout_seconds
-            try:
-                self.bridge = RepairToolBridge(
-                    store=self.store,
-                    registry=self.registry,
-                    baseline=self.baseline,
-                    snapshots=self.snapshots,
-                    image_root=self.image_root,
-                    fence=self.fence,
-                    remaining_seconds=self.remaining,
-                )
-                graph = StateGraph(Route)
-                graph.add_node("turn", RunnableLambda(self._turn))
-                graph.add_edge(START, "turn")
-                graph.add_conditional_edges(
-                    "turn", lambda state: state["route"], {"continue": "turn", "end": END}
-                )
-                with tracing_context(enabled=False):
-                    await graph.compile().ainvoke(
-                        {"route": "continue"}, config={"recursion_limit": 30, "callbacks": []}
-                    )
-            except asyncio.CancelledError:
-                self._cancelled = True
-                self._stop("cancelled", "CANCELLED")
-            except Halt as halt:
-                self._stop(halt.outcome, halt.code)
-            except StoreError as error:
-                if self.cursor.task.phase in PENDING:
+            return await self._loop()
+
+    async def run_created(
+        self,
+        claim: RepairAdmissionClaim,
+        saved: Mutation,
+        fence: RepairFence,
+    ) -> RepairResult:
+        """B1b: accept only the original in-memory admission, never resume a task."""
+        if self._used:
+            raise StoreError("repair_id_conflict")
+        self._used = True
+        if not isinstance(self.store, WebRepairStore) or not isinstance(
+            claim, RepairAdmissionClaim
+        ):
+            raise StoreError("admission_invalid")
+        with (
+            claim.owner.guard(self.store.directory, claim.nonce),
+            fence.guard(self.store.directory, claim.task_id),
+        ):
+            self._validate_resources()
+            spec = self.registry.task_spec()
+            if (
+                saved.task.task_id != spec.task_id
+                or saved.task.mode != self.mode
+                or saved.task.baseline != self.baseline.ref
+                or saved.task.budget != spec.budget
+                or saved.task.model_config_sha256 != self.adapter.config_sha256
+            ):
+                raise StoreError("version_mismatch")
+            verified_image(self.image_root)
+            if not verify_oracle():
+                raise StoreError("version_mismatch")
+            started = self.store.consume(
+                claim,
+                saved,
+                case_id=self.registry.case_name,
+                mode=self.mode,
+                policy_sha256=policy_sha256(),
+                task_fence=fence,
+            )
+            self.cursor, self.fence = started.saved, fence
+            if not started.executable:
+                return RepairResult(self.cursor, cancelled=started.cancel_requested)
+            self._web_store = self.store
+            now = self.store._now().timestamp()
+            self._last_wall = now
+            remaining = self.cursor.task.started_at.timestamp() + spec.budget.timeout_seconds - now
+            self.deadline = self.clock() + remaining
+            result, interrupted = await _owned(self._watched_loop(), cancel_operation=True)
+            return replace(result, cancelled=result.cancelled or interrupted)
+
+    async def _watched_loop(self) -> RepairResult:
+        running = asyncio.current_task()
+        store = self._web_store
+        assert running is not None and store is not None
+
+        async def watch() -> None:
+            while True:
+                await asyncio.sleep(0.1)
+                try:
+                    requested = store.receipt(self.cursor.task.task_id).cancel_requested
+                except StoreError:
                     self._reconcile = True
-                else:
-                    self._stop(
-                        "budget_exceeded"
-                        if error.code in ("budget_exceeded", "deadline_exceeded", "candidate_limit")
-                        else "outcome_unknown",
-                        "BUDGET_EXCEEDED"
-                        if error.code in ("budget_exceeded", "deadline_exceeded", "candidate_limit")
-                        else "PERSISTENCE_FAILED",
-                    )
-            except (PolicyError, ResourceError, GatewayError, ValueError):
-                self._stop("inconclusive", "INVALID_MODEL_OUTPUT")
-            except Exception:
-                self._stop("outcome_unknown", "INTERNAL_ERROR")
-            finally:
-                self._materials.clear()
-                self._completed_reads.clear()
-                self._last_tool_feedback = None
-            return RepairResult(self.cursor, self._reconcile, self._cancelled)
+                    requested = True
+                if requested:
+                    running.cancel()
+                    return
+
+        watcher = asyncio.create_task(watch())
+        try:
+            return await self._loop()
+        finally:
+            watcher.cancel()
+            with anyio.CancelScope(shield=True):
+                await asyncio.gather(watcher, return_exceptions=True)
+
+    async def _loop(self) -> RepairResult:
+        try:
+            self.bridge = RepairToolBridge(
+                store=self.store,
+                registry=self.registry,
+                baseline=self.baseline,
+                snapshots=self.snapshots,
+                image_root=self.image_root,
+                fence=self.fence,
+                remaining_seconds=self.remaining,
+            )
+            graph = StateGraph(Route)
+            graph.add_node("turn", RunnableLambda(self._turn))
+            graph.add_edge(START, "turn")
+            graph.add_conditional_edges(
+                "turn", lambda state: state["route"], {"continue": "turn", "end": END}
+            )
+            with tracing_context(enabled=False):
+                await graph.compile().ainvoke(
+                    {"route": "continue"}, config={"recursion_limit": 30, "callbacks": []}
+                )
+        except asyncio.CancelledError:
+            self._cancelled = True
+            self._stop("cancelled", "CANCELLED")
+        except Halt as halt:
+            self._stop(halt.outcome, halt.code)
+        except StoreError as error:
+            if self.cursor.task.phase in PENDING:
+                self._reconcile = True
+            else:
+                self._stop(
+                    "budget_exceeded"
+                    if error.code in ("budget_exceeded", "deadline_exceeded", "candidate_limit")
+                    else "outcome_unknown",
+                    "BUDGET_EXCEEDED"
+                    if error.code in ("budget_exceeded", "deadline_exceeded", "candidate_limit")
+                    else "PERSISTENCE_FAILED",
+                )
+        except (PolicyError, ResourceError, GatewayError, ValueError):
+            self._stop("inconclusive", "INVALID_MODEL_OUTPUT")
+        except Exception:
+            self._stop("outcome_unknown", "INTERNAL_ERROR")
+        finally:
+            self._materials.clear()
+            self._completed_reads.clear()
+            self._last_tool_feedback = None
+        return RepairResult(self.cursor, self._reconcile, self._cancelled)

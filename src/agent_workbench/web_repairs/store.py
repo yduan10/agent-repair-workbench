@@ -1,20 +1,19 @@
-"""P1-01 B1a atomic receipts and single-use execution claims.
-
-No recovery release in this batch: even a terminal task retains its slot until
-B1b can prove resource termination. Reads and retries never issue capabilities.
-"""
+"""Atomic receipts, single-use claims, and evidence-bound release transactions."""
 
 import secrets
 
 from sqlalchemy import Connection, RowMapping, select, update
 
 from agent_workbench.analysis_store.store import _hash
-from agent_workbench.mcp_config import digest
+from agent_workbench.candidate_execution.models import OracleReport
+from agent_workbench.mcp_config import canonical, digest
 from agent_workbench.orchestration.contracts import Usage
 from agent_workbench.repair_cases.profiles import get_profile
+from agent_workbench.repair_recovery.inventory import RecoveryInventory
+from agent_workbench.repair_store.comparisons import _records as comparison_records
 from agent_workbench.repair_store.fencing import RepairFence
 from agent_workbench.repair_store.models import Mutation, RepairEvent, RepairTask
-from agent_workbench.repair_store.reproductions import ReproductionStore
+from agent_workbench.repair_store.reproductions import _records as reproduction_records
 from agent_workbench.repair_store.store import _bytes, _load, _new, _validated
 from agent_workbench.run_store.models import StoreError
 from agent_workbench.run_store.schema import repair_events, repair_tasks
@@ -33,7 +32,7 @@ from .models import (
 )
 
 
-class WebRepairStore(ReproductionStore):
+class WebRepairStore(RecoveryInventory):
     def _receipt(self, connection: Connection, task_id: str) -> RowMapping:
         row = (
             connection.execute(select(receipts).where(receipts.c.request_id == task_id))
@@ -296,3 +295,100 @@ class WebRepairStore(ReproductionStore):
                 bool(row["consumed"]),
             )
         return result
+
+    def retire_unstarted(self, task_id: str, *, owner: RepairWebFence, fence: RepairFence) -> None:
+        """Explicit recovery consumes an abandoned capability without executing it."""
+        with owner.guard(self.directory), fence.guard(self.directory, task_id):
+            with self._base._transaction(write=True) as connection:
+                row = self._receipt(connection, task_id)
+                saved = self._saved(connection, row)
+                if row["consumed"] or not row["active"]:
+                    return
+                connection.execute(
+                    update(receipts).where(receipts.c.request_id == task_id).values(consumed=1)
+                )
+                self._finish_task(
+                    connection,
+                    task_id,
+                    "outcome_unknown",
+                    expected_revision=saved.task.revision,
+                    expected_sha256=saved.task_sha256,
+                    fence=fence,
+                    error_code="INTERRUPTED",
+                )
+
+    def _release_state(
+        self,
+        connection: Connection,
+        task_id: str,
+    ) -> tuple[str, bool, dict[str, OracleReport | None]]:
+        row = self._receipt(connection, task_id)
+        self._saved(connection, row)
+        task, requests, candidates = self._read(connection, task_id)
+        repro = reproduction_records(connection, task_id)
+        comparisons = comparison_records(connection, task_id)
+        events = [
+            _load(RepairEvent, e)
+            for e in connection.execute(
+                select(repair_events)
+                .where(repair_events.c.task_id == task_id)
+                .order_by(repair_events.c.revision)
+            ).mappings()
+        ]
+        # Include the complete audited evidence, not only the task revision.
+        stamp = digest(
+            canonical(
+                {
+                    "receipt": dict(row),
+                    "task": task.model_dump(mode="json"),
+                    "requests": {k: v.model_dump(mode="json") for k, v in requests.items()},
+                    "candidates": {k: v.model_dump(mode="json") for k, v in candidates.items()},
+                    "reproductions": {k: v.model_dump(mode="json") for k, v in repro.items()},
+                    "comparisons": {k: v.model_dump(mode="json") for k, v in comparisons.items()},
+                    "events": [e.model_dump(mode="json") for e in events],
+                }
+            )
+        )
+        settled = (
+            task.phase == "finished"
+            and bool(row["consumed"])
+            and not any(r.status == "pending" for r in requests.values())
+            and not any(c.status in ("preparing", "outcome_unknown") for c in candidates.values())
+        )
+        reports: dict[str, OracleReport | None] = {}
+        reconciled = {e.request.request_id for e in events if e.kind == "reconciled" and e.request}
+        for request_id, record in repro.items():
+            reports[record.plan.attempt_id] = record.report
+            if record.report is None and request_id not in reconciled:
+                settled = False
+        for record2 in comparisons.values():
+            actual = {r.report.attempt_id: r.report for r in record2.results}
+            for attempt in record2.plan.attempts:
+                reports[attempt] = actual.get(attempt)
+            if record2.report is None and record2.plan.request_id not in reconciled:
+                settled = False
+        return stamp, settled, reports
+
+    def release_state(self, task_id: str) -> tuple[str, bool, dict[str, OracleReport | None]]:
+        with self._base._transaction() as connection:
+            return self._release_state(connection, task_id)
+
+    def _release_cas(
+        self,
+        task_id: str,
+        expected_stamp: str,
+        *,
+        owner: RepairWebFence,
+        fence: RepairFence,
+    ) -> None:
+        """Private commit step; only recovery's positively checked resource path calls it."""
+        with owner.guard(self.directory), fence.guard(self.directory, task_id):
+            with self._base._transaction(write=True) as connection:
+                stamp, settled, _ = self._release_state(connection, task_id)
+                if stamp != expected_stamp or not settled:
+                    raise StoreError("recovery_required")
+                connection.execute(
+                    update(receipts)
+                    .where(receipts.c.request_id == task_id, receipts.c.active == 1)
+                    .values(active=0)
+                )

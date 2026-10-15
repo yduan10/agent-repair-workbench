@@ -31,6 +31,7 @@ export const documentationGroups: readonly DocumentationGroup[] = [
     title: "工程记录",
     description: "开发过程中的计划、规格、交付和评审记录，内容停留在写作当时；当前功能以更新记录为准。",
     entries: [
+      { title: "修复执行与恢复记录", slug: "37-p1-01-b1b-delivery", summary: "内部执行接续、停止处理与资源恢复的验收记录；网页运行尚未开放。" },
       { title: "开发计划与验收台账", slug: "03-roadmap", summary: "任务依赖、状态与验收依据。" },
       { title: "隔离修复交付记录", slug: "31-p0-06-delivery", summary: "候选、回归与真实模型试验的结果。" },
       { title: "隔离候选与回归规格", slug: "26-p0-06-candidate-verification", summary: "候选生成、冻结检查项与判定规则。" },

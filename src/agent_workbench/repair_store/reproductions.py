@@ -334,32 +334,43 @@ class ReproductionStore(ComparisonStore):
     def reconcile_reproduction(
         self, task_id: str, *, expected_revision: int, expected_sha256: str
     ) -> ReproductionMutation:
-        with RepairFence(self.directory, _uuid(task_id)):
-            with self._base._transaction(write=True) as connection:
-                task, requests, _ = self._read(connection, task_id)
-                self._cas(task, expected_revision, expected_sha256)
-                req = next(
-                    (
-                        r
-                        for r in requests.values()
-                        if r.operation == "reproduction" and r.status == "pending"
-                    ),
-                    None,
-                )
-                if req is None:
-                    raise StoreError("reproduction_not_pending")
-                record = _new(
-                    _records(connection, task_id)[req.request_id],
-                    status="outcome_unknown",
-                    finished_at=self._now(),
-                )
-                self._put_reproduction(connection, record)
-                req = _new(req, status="outcome_unknown", error_code="INTERRUPTED")
-                new = _new(
-                    task,
-                    phase="finished",
-                    outcome="outcome_unknown",
-                    error_code="INTERRUPTED",
-                    finished_at=self._now(),
-                )
-                return _result(self._commit(connection, task, new, "reconciled", req), record)
+        with RepairFence(self.directory, _uuid(task_id)) as fence:
+            return self.reconcile_reproduction_held(
+                task_id,
+                expected_revision=expected_revision,
+                expected_sha256=expected_sha256,
+                fence=fence,
+            )
+
+    def reconcile_reproduction_held(
+        self, task_id: str, *, expected_revision: int, expected_sha256: str, fence: RepairFence
+    ) -> ReproductionMutation:
+        fence.require(self.directory, _uuid(task_id))
+        with self._base._transaction(write=True) as connection:
+            task, requests, _ = self._read(connection, task_id)
+            self._cas(task, expected_revision, expected_sha256)
+            req = next(
+                (
+                    r
+                    for r in requests.values()
+                    if r.operation == "reproduction" and r.status == "pending"
+                ),
+                None,
+            )
+            if req is None:
+                raise StoreError("reproduction_not_pending")
+            record = _new(
+                _records(connection, task_id)[req.request_id],
+                status="outcome_unknown",
+                finished_at=self._now(),
+            )
+            self._put_reproduction(connection, record)
+            req = _new(req, status="outcome_unknown", error_code="INTERRUPTED")
+            new = _new(
+                task,
+                phase="finished",
+                outcome="outcome_unknown",
+                error_code="INTERRUPTED",
+                finished_at=self._now(),
+            )
+            return _result(self._commit(connection, task, new, "reconciled", req), record)

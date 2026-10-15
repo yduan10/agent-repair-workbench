@@ -880,30 +880,41 @@ class RepairStore:
         return self._commit(connection, task, new, "finished")
 
     def reconcile(self, task_id: str, *, expected_revision: int, expected_sha256: str) -> Mutation:
-        with RepairFence(self.directory, _uuid(task_id)):
-            with self._base._transaction(write=True) as connection:
-                task, requests, candidates = self._read(connection, task_id)
-                self._cas(task, expected_revision, expected_sha256)
-                req = next((r for r in requests.values() if r.status == "pending"), None)
-                if req and req.operation == "reproduction":
-                    raise StoreError("reproduction_recovery_required")
-                if req and req.operation == "comparison":
-                    raise StoreError("comparison_recovery_required")
-                candidate = candidates.get(req.candidate_id or "") if req else None
-                if req:
-                    req = _new(req, status="outcome_unknown", error_code="INTERRUPTED")
-                if candidate:
-                    candidate = _new(
-                        candidate,
-                        status="outcome_unknown",
-                        error_code="INTERRUPTED",
-                        finished_at=self._now(),
-                    )
-                new = _new(
-                    task,
-                    phase="finished",
-                    outcome="outcome_unknown",
+        with RepairFence(self.directory, _uuid(task_id)) as fence:
+            return self.reconcile_held(
+                task_id,
+                expected_revision=expected_revision,
+                expected_sha256=expected_sha256,
+                fence=fence,
+            )
+
+    def reconcile_held(
+        self, task_id: str, *, expected_revision: int, expected_sha256: str, fence: RepairFence
+    ) -> Mutation:
+        fence.require(self.directory, _uuid(task_id))
+        with self._base._transaction(write=True) as connection:
+            task, requests, candidates = self._read(connection, task_id)
+            self._cas(task, expected_revision, expected_sha256)
+            req = next((r for r in requests.values() if r.status == "pending"), None)
+            if req and req.operation == "reproduction":
+                raise StoreError("reproduction_recovery_required")
+            if req and req.operation == "comparison":
+                raise StoreError("comparison_recovery_required")
+            candidate = candidates.get(req.candidate_id or "") if req else None
+            if req:
+                req = _new(req, status="outcome_unknown", error_code="INTERRUPTED")
+            if candidate:
+                candidate = _new(
+                    candidate,
+                    status="outcome_unknown",
                     error_code="INTERRUPTED",
                     finished_at=self._now(),
                 )
-                return self._commit(connection, task, new, "reconciled", req, candidate)
+            new = _new(
+                task,
+                phase="finished",
+                outcome="outcome_unknown",
+                error_code="INTERRUPTED",
+                finished_at=self._now(),
+            )
+            return self._commit(connection, task, new, "reconciled", req, candidate)

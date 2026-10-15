@@ -1,8 +1,8 @@
 """Read-only by default; explicit apply removes only positively identified containers.
 
-A task fence covers the complete inspect/reap interval. Ledger reconciliation then
-reacquires its own fence and uses the original CAS; a competing owner can only
-cause a conservative pending result. No execution or budget reservation is replayed.
+A task fence covers the complete inspect/reap interval. Ledger reconciliation uses
+the same task fence and original CAS through the complete operation.
+No execution or budget reservation is replayed.
 """
 
 import asyncio
@@ -139,11 +139,41 @@ class RecoveryService:
         return cid, state["Running"]
 
     async def recover(self, task_id: str, *, apply: bool = False) -> RecoveryReport:
+        try:
+            with RepairFence(self.store.directory, task_id) as fence:
+                return await self.recover_held(task_id, fence=fence, apply=apply)
+        except Exception as error:
+            return RecoveryReport(
+                task_id=task_id,
+                mode="apply" if apply else "inspect",
+                error="OWNER_ACTIVE"
+                if getattr(error, "code", None) == "repair_busy"
+                else "RECOVERY_UNCONFIRMED",
+            )
+
+    async def recover_held(
+        self,
+        task_id: str,
+        *,
+        fence: RepairFence,
+        apply: bool = False,
+    ) -> RecoveryReport:
+        """Internal entry: caller keeps the same task fence through reconciliation."""
+        with fence.guard(self.store.directory, task_id):
+            return await self._recover(task_id, fence=fence, apply=apply)
+
+    async def _recover(
+        self,
+        task_id: str,
+        *,
+        fence: RepairFence,
+        apply: bool,
+    ) -> RecoveryReport:
         report = RecoveryReport(task_id=task_id, mode="apply" if apply else "inspect")
         inventory: Inventory | None = None
         try:
             # Busy/SIGSTOP owners are rejected before even inspecting Docker.
-            with RepairFence(self.store.directory, task_id):
+            with fence.guard(self.store.directory, task_id):
                 inventory = self.store.inventory(task_id)
                 report.outcome = inventory.saved.task.outcome
                 report.requires_reconcile = inventory.saved.task.phase != "finished"
@@ -185,16 +215,17 @@ class RecoveryService:
                             report.error = "RESOURCE_UNVERIFIED"
                             return report
             if report.requires_reconcile:
-                # Existing store recovery is responsible for pending request semantics.
+                # Held-fence store recovery preserves pending request semantics.
                 # Never reconcile a terminal task: keep verified/cancelled history intact.
                 method = {
-                    "comparison": self.store.reconcile_comparison,
-                    "reproduction": self.store.reconcile_reproduction,
-                }.get(inventory.pending_operation or "", self.store.reconcile)
+                    "comparison": self.store.reconcile_comparison_held,
+                    "reproduction": self.store.reconcile_reproduction_held,
+                }.get(inventory.pending_operation or "", self.store.reconcile_held)
                 updated = method(
                     task_id,
                     expected_revision=inventory.saved.task.revision,
                     expected_sha256=inventory.saved.task_sha256,
+                    fence=fence,
                 )
                 report.outcome = updated.task.outcome
                 report.requires_reconcile = False

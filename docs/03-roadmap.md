@@ -89,7 +89,7 @@
 |---|---|---|---|---|---|
 | P1-01a | P1 | 固定场景网页受控复现、停止与报告操作 | P0-03/04 | [规格](22-web-reproduction.md)、[设计复审](reviews/P1-01a-design-review.md)；W01～W12，[验收记录](23-p1-01a-delivery.md)；planned → ready → in_progress → in_review → done | done |
 | P1-01b | P1 | 固定案例网页分析与执行控制台 | P0-05 | [实施规格](29-web-analysis-console.md)；planned → ready → in_progress；接收账本、服务、前端控制台、证据阅读与交付文档已独立评审；真实网页模型、容器及T05取消回收链路通过，见[交付记录](30-web-analysis-delivery.md) | done |
-| P1-01 | P1 | 完整 Web 运行/审批接入（不含已拆分的固定场景入口） | P0-06 | planned → ready → in_progress；[网页修复设计](34-p1-01-web-repair.md)及[框架预审](reviews/P1-01-web-repair-design-review.md)；[B1详细契约](35-p1-01-b1-admission.md)已独立复审冻结，[B1a接收账本](36-p1-01-b1a-delivery.md)已验收done；B1b执行接续/安全释放未实现；审批不等于写回 | in_progress |
+| P1-01 | P1 | 完整 Web 运行/审批接入（不含已拆分的固定场景入口） | P0-06 | planned → ready → in_progress；[网页修复设计](34-p1-01-web-repair.md)及[框架预审](reviews/P1-01-web-repair-design-review.md)；[B1详细契约](35-p1-01-b1-admission.md)已独立复审冻结，[B1a接收账本](36-p1-01-b1a-delivery.md)已验收done；[B1b执行接续/安全释放](37-p1-01-b1b-delivery.md)已验收done，下一批B2；审批不等于写回 | in_progress |
 | P1-02 | P1 | 项目经验记忆 | P0-06 | 人工确认、来源、版本匹配、过期/删除；错误经验负向测试 | planned |
 | P1-03 | P1 | CLI/CI 打包与接入指南 | P0-06 | 三个不同工具项目接入，其中一个非开发 fixture；安装/卸载/升级验证 | planned |
 | P1-04 | P1 | 使用验证与独立评测集 | P0-03 | ≥10 个来源明确的故障案例；真实/合成分报；记录真实开发者试用反馈或明确未取得 | planned |
@@ -218,3 +218,9 @@
 - 用户批准B1a，批次planned → ready → in_progress → in_review → done。显式0008迁移、严格请求、一次性claim、原子接收/取消/消费已实现，最终门禁见[36](36-p1-01-b1a-delivery.md)。
 - 独立评审三项P1涉及私有令牌编码、consumed回退和锁生命周期，均已修复并补反例。全量1454 passed/66 skipped，静态/构建通过，125页与119站内链接无断链，独立复审通过。
 - 本批不开放HTTP写入口、不迁移用户主库；站内文档更新，修复页面保持只读。下一批B1b，不跳到B2/B3。
+
+### 2026-10-15：P1-01 B1b 实施
+
+- B1a 已提交并推送 `40d3e34`，远端 CI 通过。
+- B1b planned → ready → in_progress → in_review → done：共享执行循环、持久取消、原始截止时间、held-fence 恢复与正向证据释放已验收；全量1484 passed/66 skipped、独立复审Pass，前端构建与站内文档检查通过，见[37](37-p1-01-b1b-delivery.md)。
+- 前端文档与更新记录同步；网页修复仍只读。B2/B3 API 与页面运行入口尚待实施，主库未迁移。
