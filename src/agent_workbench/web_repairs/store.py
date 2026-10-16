@@ -33,6 +33,15 @@ from .models import (
 
 
 class WebRepairStore(RecoveryInventory):
+    def active_id(self) -> str | None:
+        with self._base._transaction() as connection:
+            task_id = connection.execute(
+                select(receipts.c.request_id).where(receipts.c.active == 1)
+            ).scalar_one_or_none()
+            if task_id is not None:
+                self._saved(connection, self._receipt(connection, task_id))
+            return task_id
+
     def _receipt(self, connection: Connection, task_id: str) -> RowMapping:
         row = (
             connection.execute(select(receipts).where(receipts.c.request_id == task_id))

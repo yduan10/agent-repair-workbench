@@ -61,7 +61,7 @@ class WebRunStore(RunStore):
             .order_by(events.c.version.desc())
             .limit(1)
         ).scalar()
-        safe = latest == "reconciled" and run.executor_state in ("absent", "stopped")
+        safe = False  # Reconciliation/absence cannot disprove an in-flight Docker create.
         if latest == "finished" and run.executor_state == "absent":
             report = self._report(connection, run)
             safe = report.execution.cleanup in ("removed", "not_created") and (

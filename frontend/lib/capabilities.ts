@@ -16,7 +16,7 @@ export const capabilities = {
   checks: { status: "web", note: "导入或编辑调用证据，在本机检查并下载报告。" },
   tasks: { status: "web", note: "运行四种内置故障场景；暂不支持接入自己的工具。" },
   diagnosis: { status: "web", note: "对两个内置案例发起分析；修复建议不会自动应用。" },
-  // Internal execution/recovery is verified; API/page execution gates remain closed.
+  // API lifecycle is implemented; local backend cutover and page controls belong to B3.
   repairs: { status: "web_readonly", note: "查看两个内置修复案例的候选与回归结果；生成修复需在终端运行。" },
   connections: { status: "web", note: "查看本机环境与接口；自定义工具接入待开发。" },
   memory: { status: "planned", note: "记录经确认的项目经验，尚未开放。" },

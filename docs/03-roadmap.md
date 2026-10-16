@@ -89,7 +89,7 @@
 |---|---|---|---|---|---|
 | P1-01a | P1 | 固定场景网页受控复现、停止与报告操作 | P0-03/04 | [规格](22-web-reproduction.md)、[设计复审](reviews/P1-01a-design-review.md)；W01～W12，[验收记录](23-p1-01a-delivery.md)；planned → ready → in_progress → in_review → done | done |
 | P1-01b | P1 | 固定案例网页分析与执行控制台 | P0-05 | [实施规格](29-web-analysis-console.md)；planned → ready → in_progress；接收账本、服务、前端控制台、证据阅读与交付文档已独立评审；真实网页模型、容器及T05取消回收链路通过，见[交付记录](30-web-analysis-delivery.md) | done |
-| P1-01 | P1 | 完整 Web 运行/审批接入（不含已拆分的固定场景入口） | P0-06 | planned → ready → in_progress；[网页修复设计](34-p1-01-web-repair.md)及[框架预审](reviews/P1-01-web-repair-design-review.md)；[B1详细契约](35-p1-01-b1-admission.md)已独立复审冻结，[B1a接收账本](36-p1-01-b1a-delivery.md)已验收done；[B1b执行接续/安全释放](37-p1-01-b1b-delivery.md)已验收done，下一批B2；审批不等于写回 | in_progress |
+| P1-01 | P1 | 完整 Web 运行/审批接入（不含已拆分的固定场景入口） | P0-06 | planned → ready → in_progress；[网页修复设计](34-p1-01-web-repair.md)及[框架预审](reviews/P1-01-web-repair-design-review.md)；[B1详细契约](35-p1-01-b1-admission.md)已独立复审冻结，[B1a接收账本](36-p1-01-b1a-delivery.md)已验收done；[B1b执行接续/安全释放](37-p1-01-b1b-delivery.md)已验收done；[B2 API与生命周期](38-p1-01-b2-delivery.md)已验收done，下一批B3页面接入；审批不等于写回 | in_progress |
 | P1-02 | P1 | 项目经验记忆 | P0-06 | 人工确认、来源、版本匹配、过期/删除；错误经验负向测试 | planned |
 | P1-03 | P1 | CLI/CI 打包与接入指南 | P0-06 | 三个不同工具项目接入，其中一个非开发 fixture；安装/卸载/升级验证 | planned |
 | P1-04 | P1 | 使用验证与独立评测集 | P0-03 | ≥10 个来源明确的故障案例；真实/合成分报；记录真实开发者试用反馈或明确未取得 | planned |
@@ -224,3 +224,11 @@
 - B1a 已提交并推送 `40d3e34`，远端 CI 通过。
 - B1b planned → ready → in_progress → in_review → done：共享执行循环、持久取消、原始截止时间、held-fence 恢复与正向证据释放已验收；全量1484 passed/66 skipped、独立复审Pass，前端构建与站内文档检查通过，见[37](37-p1-01-b1b-delivery.md)。
 - 前端文档与更新记录同步；网页修复仍只读。B2/B3 API 与页面运行入口尚待实施，主库未迁移。
+
+
+### 2026-10-15：P1-01 B2 API 与生命周期
+
+- B1b 提交 `a68dde0` 已推送，GitHub CI 成功。
+- B2 planned → ready → in_progress → in_review → done：固定案例目录、开始/查询/停止 API、独立 owner、跨 worker 停止与 shutdown 收尾已实现；同步修复旧复现/分析槽的未知创建释放与 attach 未确认错误传播。
+- 两个子范围独立评审通过；全量1524 passed/66 skipped、前端生产构建与站内130页/124交叉链接验收通过，见[38](38-p1-01-b2-delivery.md)。
+- 当前主后端/主库未切换；网页修复仍只读。B3 接入页面并受控迁移，B4 审阅决定，B5 真实完整链路验收；P1-01 保持 in_progress。

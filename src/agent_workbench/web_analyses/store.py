@@ -112,8 +112,6 @@ class WebAnalysisStore(AnalysisStore):
                 .order_by(events.c.version.desc())
                 .limit(1)
             ).scalar()
-            if latest == "reconciled":
-                continue
             if latest != "finished" or run.executor_state != "absent":
                 return False
             report = self._report(connection, run)

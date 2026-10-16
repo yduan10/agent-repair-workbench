@@ -164,7 +164,7 @@ async def run_sandbox(
                 try:
                     await _close_attach(process)
                 except (TimeoutError, OSError):
-                    execution.error = execution.error or "attach_cleanup_unconfirmed"
+                    execution.error = "attach_cleanup_unconfirmed"
         execution.stdout_bytes, execution.stderr_bytes = state.stdout_bytes, state.stderr_bytes
         execution.frames = state.frames
         execution.error = execution.error or state.error

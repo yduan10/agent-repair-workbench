@@ -15,6 +15,7 @@ from agent_workbench.checker import MAX_BYTES
 from agent_workbench.cli import run_check
 from agent_workbench.run_store.location import state_directory
 from agent_workbench.web_analyses.service import AnalysisService
+from agent_workbench.web_repairs.service import RepairService
 from agent_workbench.web_runs.service import ReproductionService
 
 
@@ -44,10 +45,15 @@ def create_app() -> FastAPI:
         app.state.workers = set()
         app.state.reproductions = ReproductionService(state_directory())
         app.state.analysis_runs = AnalysisService(state_directory())
+        app.state.repair_runs = RepairService(state_directory())
         try:
             yield
         finally:
-            await asyncio.gather(app.state.reproductions.close(), app.state.analysis_runs.close())
+            await asyncio.gather(
+                app.state.reproductions.close(),
+                app.state.analysis_runs.close(),
+                app.state.repair_runs.close(),
+            )
             if app.state.workers:
                 await asyncio.gather(*app.state.workers, return_exceptions=True)
 
@@ -63,11 +69,20 @@ def create_app() -> FastAPI:
         if not re.fullmatch(
             r"(?:127\.0\.0\.1|localhost)(?::[0-9]{1,5})?", request.headers.get("host", "")
         ):
-            response: Response = error("host_forbidden", 400)
+            response: Response = (
+                error("forbidden_host", 403)
+                if request.url.path.startswith("/api/repair-runs")
+                else error("host_forbidden", 400)
+            )
         elif (origin is not None and origin not in origins) or request.headers.get(
             "sec-fetch-site"
         ) == "cross-site":
-            response = error("origin_forbidden", 403)
+            response = error(
+                "forbidden_origin"
+                if request.url.path.startswith("/api/repair-runs")
+                else "origin_forbidden",
+                403,
+            )
         else:
             response = await call_next(request)
         response.headers["Cache-Control"] = "no-store"
@@ -126,8 +141,10 @@ def create_app() -> FastAPI:
     from agent_workbench.repair_reader.api import router as repairs_router
     from agent_workbench.run_store.api import router as runs_router
     from agent_workbench.web_analyses.api import router as analysis_runs_router
+    from agent_workbench.web_repairs.api import router as repair_runs_router
     from agent_workbench.web_runs.api import router as reproductions_router
 
+    app.include_router(repair_runs_router)
     app.include_router(repairs_router)
     app.include_router(analysis_runs_router)
     app.include_router(reproductions_router)

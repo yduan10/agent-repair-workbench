@@ -83,7 +83,7 @@ PLAYWRIGHT_CHANNEL=chrome npx playwright test tests/reviewer-document-reader.spe
 
 ## 5. 基线、部署与下一批
 
-B1a 已按用户授权提交并推送至 main，提交 `40d3e34`，GitHub CI 已成功。B1b 本批仍在本地，尚未提交或推送。
+B1a 已按用户授权提交并推送至 main，提交 `40d3e34`，GitHub CI 已成功。B1b 交付时尚未提交；后续已按用户授权提交并推送 `a68dde0`，GitHub CI run `38732440480` 成功。
 
 源代码使用 0008；本机既有后端仍运行旧代码与 0007 主库。本批保持主库及后端不变，仅更新前端站内文档。启用新后端前仍需按 [36](36-p1-01-b1a-delivery.md) 停写、备份、显式迁移与逐表核验。
 

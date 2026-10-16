@@ -257,12 +257,13 @@ async def test_paused_owner_lease_expired_blocks_reconcile_and_admission(store, 
             store.admit(request(), fence)
         with pytest.raises(StoreError, match="^version_conflict$"):
             finish(store, claim)  # resumed stale owner cannot falsely commit success
-    # Owner exited: explicit reconciliation can now inspect and record absence.
+    # Owner exited: reconciliation records absence, but cannot prove an in-flight
+    # create has terminated. B2 keeps the slot occupied without positive evidence.
     reconciled = await reconcile_runs(store)
     assert reconciled[0].status == "outcome_unknown" and len(observed) == 1
     with OwnerFence(store.directory) as fence:
-        new = store.admit(request(), fence)
-        assert isinstance(new, Claim)
+        with pytest.raises(StoreError, match="^runner_busy$"):
+            store.admit(request(), fence)
         assert store.existing(req).status == "outcome_unknown"
 
 

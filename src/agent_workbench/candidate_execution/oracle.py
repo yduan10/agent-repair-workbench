@@ -222,7 +222,9 @@ def finalize(report: OracleReport) -> None:
     report.status = "inconclusive"
     if tuple(s.name for s in report.steps) != STEPS:
         return
-    if report.cleanup == "unconfirmed":
+    if report.error == "attach_cleanup_unconfirmed":
+        report.status = "outcome_unknown"
+    elif report.cleanup == "unconfirmed":
         report.status, report.error = "outcome_unknown", "cleanup_unconfirmed"
     elif report.error == "run_cancelled":
         report.status = "cancelled"
@@ -249,6 +251,7 @@ async def _execute(
     process: Process | None = None
     oracle = SequenceOracle(report, stage_timeout)
     cleaned = False
+    attach_failed = False
 
     async def cleanup() -> None:
         nonlocal cleaned
@@ -336,7 +339,7 @@ async def _execute(
                 try:
                     await _close_attach(process)
                 except (TimeoutError, OSError):
-                    report.error = "attach_cleanup_unconfirmed"
+                    attach_failed = True
         if report.snapshot_verified_before:
             try:
                 SnapshotStore(snapshot.root.parent).verify(snapshot)
@@ -359,6 +362,8 @@ async def _execute(
             state.frames,
         )
         report.elapsed_ms = round((time.monotonic() - started) * 1000)
+        if attach_failed:
+            report.error = "attach_cleanup_unconfirmed"
         finalize(report)
     return report
 
@@ -396,7 +401,8 @@ async def run_oracle(
             if cancelled:
                 owner.cancel()
             return await _execute(snapshot, report, image_root, stage_timeout, total_timeout)
-        report.error = "run_cancelled"
+        if report.error != "attach_cleanup_unconfirmed":
+            report.error = "run_cancelled"
         finalize(report)
         return report
 
@@ -406,7 +412,8 @@ async def run_oracle(
             with anyio.CancelScope(shield=cancelled):
                 result = await asyncio.shield(task)
             if cancelled:
-                result.error = "run_cancelled"
+                if result.error != "attach_cleanup_unconfirmed":
+                    result.error = "run_cancelled"
                 finalize(result)
             return result
         except asyncio.CancelledError:
@@ -415,6 +422,7 @@ async def run_oracle(
                 scope.cancel()
             if task.done():
                 result = task.result()
-                result.error = "run_cancelled"
+                if result.error != "attach_cleanup_unconfirmed":
+                    result.error = "run_cancelled"
                 finalize(result)
                 return result

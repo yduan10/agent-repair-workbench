@@ -294,7 +294,9 @@ def test_analysis_unknown_does_not_release_unconfirmed_linked_runs(host):
         base.reconcile(execution.run.run_id, execution.run.version, executor_state="absent")
         if execution == first:
             assert not store.release_safe(owner)
-    assert store.release_safe(owner)
+    # An absent observation is not positive proof that a pending create ended.
+    assert not store.release_safe(owner)
+    assert store.active_id() == request.request_id
     base.close()
 
 

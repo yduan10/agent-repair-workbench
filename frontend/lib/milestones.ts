@@ -17,6 +17,15 @@ export const changelog: readonly ChangelogDay[] = [
     date: "2026-10-15",
     entries: [
       {
+        slug: "repair-api-documentation",
+        title: "新增修复运行接口说明",
+        changes: [
+          "站内文档新增开始、查询与停止接口说明，以及连接中断后如何查询原任务。",
+          "补充资源状态无法确认时的恢复限制与页面接入安排。",
+        ],
+        limit: "修复页仍用于查看结果，开始与停止按钮将在页面接通后开放。",
+      },
+      {
         slug: "repair-documentation",
         title: "补充网页修复接入说明",
         changes: [
