@@ -14,6 +14,18 @@ export type ChangelogDay = { date: string; entries: readonly ChangelogEntry[] };
 
 export const changelog: readonly ChangelogDay[] = [
   {
+    date: "2026-10-16",
+    entries: [{
+      slug: "web-repair-controls", title: "在网页开始和停止修复",
+      changes: [
+        "修复页新增案例与协作方式选择，可以直接开始修复、查看运行事件并停止执行。",
+        "刷新页面会找回原任务；提交回应丢失时保留原请求，提供查询与明确重新提交入口。",
+        "预算详情可展开，候选的代码差异与回归结果继续在同一页审阅。",
+      ],
+      limit: "支持两个内置案例，候选留在隔离副本；人工接受与补丁下载尚未开放。",
+    }],
+  },
+  {
     date: "2026-10-15",
     entries: [
       {

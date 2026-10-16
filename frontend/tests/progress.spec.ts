@@ -6,7 +6,7 @@ const sections = [
   { path: "/workbench", nav: "调用检查", title: "调用检查", badge: "网页可用" },
   { path: "/workspace/tasks", nav: "复现", title: "复现", badge: "网页可用" },
   { path: "/workspace/diagnosis", nav: "分析", title: "分析", badge: "网页可用" },
-  { path: "/workspace/repairs", nav: "修复", title: "修复", badge: "网页只读" },
+  { path: "/workspace/repairs", nav: "修复", title: "修复", badge: "网页可用" },
   { path: "/workspace/connections", nav: "环境与接入", title: "环境与接入", badge: "网页可用" },
 ] as const;
 

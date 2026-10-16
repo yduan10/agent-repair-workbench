@@ -1,0 +1,21 @@
+import { test, expect } from "@playwright/test";
+test.skip(process.env.AWB_B3_BROWSER !== "1", "Explicit isolated B3 service/SQLite gate");
+test("real HTTP and SQLite: start, refresh same request, stop, durable event history", async ({ page }) => {
+  await page.goto("/workspace/repairs");
+  await page.getByLabel("案例", { exact: true }).selectOption("counter_offset");
+  await page.getByRole("button", { name: "开始修复", exact: true }).click();
+  await expect(page.getByRole("button", { name: "停止修复", exact: true })).toBeVisible();
+  const id = new URL(page.url()).searchParams.get("task"); expect(id).toBeTruthy();
+  await page.reload(); await expect(page.getByRole("button", { name: "停止修复", exact: true })).toBeVisible();
+  expect(new URL(page.url()).searchParams.get("task")).toBe(id);
+  await expect(page.getByRole("region", { name: "实时执行事件", exact: true })).toContainText("已登记调用：模型");
+  await page.getByRole("button", { name: "停止修复", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "停止修复", exact: true }).click();
+  await expect.poll(() => page.evaluate(key => sessionStorage.getItem(key), "awb-pending-repair-v1"), { timeout: 20000 }).toBeNull();
+  await expect(page.getByRole("region", { name: "实时执行事件", exact: true })).toContainText("调用已结束：模型");
+  await expect(page.getByRole("button", { name: "开始修复", exact: true })).toBeEnabled();
+  const receipt = await page.request.get(`/api/repair-runs/${id}`); const result = await receipt.json();
+  expect(result.task.phase).toBe("finished"); expect(result.cancel_requested).toBe(true); expect(result.active).toBe(false);
+  expect(result.task.usage.reserved_tokens).toBeGreaterThan(0);
+  expect(result.task.outcome).not.toBe("candidate_verified");
+});

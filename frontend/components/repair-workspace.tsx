@@ -14,6 +14,7 @@ import { LinkTabs } from "./ui/tabs";
 import CapabilityBadge from "./capability-badge";
 import { DiffViewer } from "./repairs/diff-viewer";
 import { RegressionTable } from "./repairs/regression-table";
+import RepairRunControls from "./repairs/run-controls";
 import { TechDetails } from "./repairs/tech-details";
 import {
   REPAIR_COMMAND, REPAIR_DOCS, caseLabels, comparisonOutcomes, errorLabels, loadDiff, loadRepair, loadRepairs, modeLabels, outcomes, phaseLabels, reasonText,
@@ -57,7 +58,7 @@ function candidateVerdict(candidate: Candidate, comparison: Comparison | undefin
     if (running) return { tone: "running", label: "等待回归结果", text: "回归完成后会显示结果。" };
     return { tone: "neutral", label: "尚无回归结果", text: "这个候选没有回归记录，因此不能算作通过。" };
   }
-  if (comparison.verification === "unavailable") return { tone: "unknown", label: "结果已过期", text: "候选文件或检查项在记录后有改动，记录时的结果已撤回。请用 CLI 重新运行修复命令。" };
+  if (comparison.verification === "unavailable") return { tone: "unknown", label: "结果已过期", text: "候选文件或检查项在记录后有改动，记录时的结果已撤回。请在上方开始一次新修复。" };
   if (comparison.verification === "not_finished") return { tone: "unknown", label: "回归未完成", text: "回归没有执行完，没有可用的结果。" };
   const outcome = comparison.current_outcome!;
   const text = comparison.reason ? reasonText[comparison.reason] : "";
@@ -198,14 +199,17 @@ function Workspace() {
     <button type="button" className="btn" onClick={reload} disabled={busy} aria-busy={busy || undefined}><RefreshCw size={14} aria-hidden="true" />刷新</button>
   </> : undefined;
 
+  const controls = <RepairRunControls selected={selected} onSelect={id => router.replace(href(id, tab), { scroll: false })} onRefresh={reload} />;
+
   if (empty && !listError) return <>
     <Header />
+    {controls}
     <div className="pane">
       <div className="empty-state rp-empty">
         <span className="empty-icon"><GitCompareArrows size={18} aria-hidden="true" /></span>
         <h2>还没有修复记录</h2>
-        <p>修复在终端运行，网页只读取结果。配置模型并构建 Docker 镜像后，在项目根目录运行：</p>
-        <Command />
+        <p>选择上方内置案例开始修复。候选生成后，在这里审阅代码差异与回归结果。</p>
+        <details><summary>也可以在终端运行</summary><Command /></details>
         <div className="empty-actions">
           <button type="button" className="btn btn-sm" onClick={reload} disabled={busy}><RefreshCw size={13} aria-hidden="true" />刷新</button>
           <Link className="btn btn-sm btn-ghost" href={REPAIR_DOCS}><BookOpen size={13} aria-hidden="true" />查看使用指南</Link>
@@ -216,6 +220,7 @@ function Workspace() {
 
   return <>
     <Header actions={actions} />
+    {controls}
     {listError && <div className="rp-alert"><Callout tone="fail" role="alert" title="无法读取修复记录" actions={<button type="button" className="btn btn-sm" onClick={reload}>重试读取列表</button>}>{listError}</Callout></div>}
     <div className="rp-layout">
       <aside className="pane rp-list" aria-labelledby="rp-list-title" aria-busy={listLoading}>
@@ -279,7 +284,7 @@ function Detail({ detail, withdrawn, tab, candidate, comparison, notice, diff, d
       </p>
     </header>
 
-    {task.phase !== "finished" && <Callout title={`修复仍在终端运行：${phaseLabels[task.phase]}`}>完成后点「刷新」查看结果。</Callout>}
+    {task.phase !== "finished" && <Callout title={`修复进行中：${phaseLabels[task.phase]}`}>网页发起的任务会自动更新；终端任务可点击「刷新」读取。</Callout>}
 
     {!candidate ? <div className="rp-no-candidate">
       <EmptyState icon={FileX2} title="这次修复没有生成候选">

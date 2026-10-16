@@ -67,3 +67,11 @@ async def cancel(task_id: str, request: Request) -> Response:
         return JSONResponse({"error": "invalid_request"}, status_code=400)
     result = await service(request).read(task_id, cancel=True)
     return JSONResponse(result.body, status_code=result.status)
+
+
+@router.get("/{task_id}/events")
+async def events(task_id: str, request: Request) -> Response:
+    if not valid_id(task_id) or request.query_params:
+        return JSONResponse({"error": "invalid_request"}, status_code=400)
+    result = await service(request).events(task_id)
+    return JSONResponse(result.body, status_code=result.status)

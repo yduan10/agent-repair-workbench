@@ -277,3 +277,25 @@ uv run --frozen agent-workbench repair-recovery --task-id <task-uuid> --apply
 | 浏览器测试找不到 Chromium | 安装锁定 Playwright 对应浏览器，或在本机显式选择已安装的 Chrome。 |
 
 项目是可信本机、单用户工作台，尚非多租户服务。原始 trace、凭据和运行产物不提交；报告中的字段路径与摘要也应在分享前审核。全部文档见 [工程文档索引](README.md)，仓库见 [GitHub](https://github.com/ykduan0916/agent-repair-workbench)。
+
+
+## 网页修复与本机常驻服务
+
+修复页顶部选择内置案例（返回类型错误/计数值偏移）与单/三角色，然后开始。展开预算可查看上限；运行期间显示结构化事件与停止按钮。停止请求已登记不等于调用已结束；未知用量保留原预留。候选生成后在原页面审阅diff和回归，人工接受/下载尚未开放。
+
+刷新只查询已有请求。若显示“提交结果待确认”，先查询；明确点击“重新提交同一请求”才可能首次启动。不要清空会话存储后反复新建。已结束但资源未确认回收时继续占槽，按恢复说明处理。
+
+macOS常驻使用当前用户LaunchAgent，前端3010、后端8030仅监听127.0.0.1。登录后自动运行，异常退出自动重启；注销/关机期间不可访问，开机登录后再启动，不承诺睡眠时继续计算。服务重启不会自动重放中断任务。
+
+```bash
+# 查看状态（不显示模型密钥）
+.venv/bin/python ops/local_service.py status
+# 停止两个本机服务；正常关闭等待已接收任务收尾
+.venv/bin/python ops/local_service.py stop
+# 更新代码后先完成依赖、显式迁移与前端生产构建，再启动
+.venv/bin/python ops/local_service.py install
+```
+
+启动器读取本地`artifacts/local-service/model-env.json`（用户所有、权限0600），只接受指定AWB_MODEL配置；不放进Git、plist或前端。首次安装前需自行准备现有模型配置、`.venv`及`frontend/.next/BUILD_ID`，日志在同目录`api.log`、`web.log`；运维时自行归档日志，本版不包含自动轮转。不能把该文件复制进公开问题报告。
+
+本机服务文件为`~/Library/LaunchAgents/io.agentrepair.local.api.plist`和`io.agentrepair.local.web.plist`。卸载时先运行stop，再删除这两个本项目的plist；不要删除运行账本或凭据来停止服务。更新前端必须先stop再build再install，避免在服务运行时覆盖`.next`。启用新版前按[迁移记录](39-p1-01-b3-web-controls.md)备份；带新数据不能直接降级到0007。

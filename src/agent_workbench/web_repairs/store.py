@@ -33,6 +33,44 @@ from .models import (
 
 
 class WebRepairStore(RecoveryInventory):
+    def public_events(self, task_id: str) -> dict[str, object]:
+        """B3 projection: audit in the same transaction, never serialize private requests."""
+        with self._base._transaction() as connection:
+            receipt = self._receipt(connection, task_id)
+            saved = self._saved(connection, receipt)
+            rows = (
+                connection.execute(
+                    select(repair_events)
+                    .where(repair_events.c.task_id == task_id)
+                    .order_by(repair_events.c.revision)
+                    .limit(256)
+                )
+                .mappings()
+                .all()
+            )
+            events = []
+            for row in rows:
+                event = _load(RepairEvent, row)
+                request = event.request
+                events.append(
+                    {
+                        "revision": event.revision,
+                        "at": event.at.isoformat(),
+                        "kind": event.kind,
+                        "role": request.role if request else None,
+                        "operation": request.operation if request else None,
+                        "tool": request.tool if request else None,
+                        "status": request.status if request else None,
+                        "error_code": request.error_code if request else None,
+                    }
+                )
+            return {
+                "schema_version": 1,
+                "task_id": task_id,
+                "revision": saved.task.revision,
+                "events": events,
+            }
+
     def active_id(self) -> str | None:
         with self._base._transaction() as connection:
             task_id = connection.execute(

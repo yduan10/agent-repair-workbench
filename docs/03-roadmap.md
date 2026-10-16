@@ -89,7 +89,7 @@
 |---|---|---|---|---|---|
 | P1-01a | P1 | 固定场景网页受控复现、停止与报告操作 | P0-03/04 | [规格](22-web-reproduction.md)、[设计复审](reviews/P1-01a-design-review.md)；W01～W12，[验收记录](23-p1-01a-delivery.md)；planned → ready → in_progress → in_review → done | done |
 | P1-01b | P1 | 固定案例网页分析与执行控制台 | P0-05 | [实施规格](29-web-analysis-console.md)；planned → ready → in_progress；接收账本、服务、前端控制台、证据阅读与交付文档已独立评审；真实网页模型、容器及T05取消回收链路通过，见[交付记录](30-web-analysis-delivery.md) | done |
-| P1-01 | P1 | 完整 Web 运行/审批接入（不含已拆分的固定场景入口） | P0-06 | planned → ready → in_progress；[网页修复设计](34-p1-01-web-repair.md)及[框架预审](reviews/P1-01-web-repair-design-review.md)；[B1详细契约](35-p1-01-b1-admission.md)已独立复审冻结，[B1a接收账本](36-p1-01-b1a-delivery.md)已验收done；[B1b执行接续/安全释放](37-p1-01-b1b-delivery.md)已验收done；[B2 API与生命周期](38-p1-01-b2-delivery.md)已验收done，下一批B3页面接入；审批不等于写回 | in_progress |
+| P1-01 | P1 | 完整 Web 运行/审批接入（不含已拆分的固定场景入口） | P0-06 | planned → ready → in_progress；[网页修复设计](34-p1-01-web-repair.md)及[框架预审](reviews/P1-01-web-repair-design-review.md)；[B1详细契约](35-p1-01-b1-admission.md)已独立复审冻结，[B1a接收账本](36-p1-01-b1a-delivery.md)已验收done；[B1b执行接续/安全释放](37-p1-01-b1b-delivery.md)已验收done；[B2 API与生命周期](38-p1-01-b2-delivery.md)已验收done；[B3网页操作与常驻服务](39-p1-01-b3-web-controls.md)已验收done；审批不等于写回 | in_progress |
 | P1-02 | P1 | 项目经验记忆 | P0-06 | 人工确认、来源、版本匹配、过期/删除；错误经验负向测试 | planned |
 | P1-03 | P1 | CLI/CI 打包与接入指南 | P0-06 | 三个不同工具项目接入，其中一个非开发 fixture；安装/卸载/升级验证 | planned |
 | P1-04 | P1 | 使用验证与独立评测集 | P0-03 | ≥10 个来源明确的故障案例；真实/合成分报；记录真实开发者试用反馈或明确未取得 | planned |
@@ -232,3 +232,11 @@
 - B2 planned → ready → in_progress → in_review → done：固定案例目录、开始/查询/停止 API、独立 owner、跨 worker 停止与 shutdown 收尾已实现；同步修复旧复现/分析槽的未知创建释放与 attach 未确认错误传播。
 - 两个子范围独立评审通过；全量1524 passed/66 skipped、前端生产构建与站内130页/124交叉链接验收通过，见[38](38-p1-01-b2-delivery.md)。
 - 当前主后端/主库未切换；网页修复仍只读。B3 接入页面并受控迁移，B4 审阅决定，B5 真实完整链路验收；P1-01 保持 in_progress。
+
+
+### 2026-10-16：P1-01 B3 网页操作与常驻服务
+
+- B2提交`9195df9`已推送。B3 planned → ready → in_progress → in_review → done，网页开始/停止、严格pending、只读恢复、运行事件已实现。
+- API/SQLite/生产Next代理的隔离浏览器链路通过；两个独立评审子范围分开验收，全量1551 passed/67 skipped、核心浏览器36 passed/1 skipped与补充2项通过，完整记录见[39](39-p1-01-b3-web-controls.md)。
+- 主库已从0007显式迁移0008，17个旧表183行逐行字节/顺序摘要一致；用户要求本机前后端由launchd常驻，两个服务独立核验PPID1、loopback监听及HTTP200，常驻交付完成。
+- 下一批B4为人工审阅决定与补丁下载，B5再完成真实模型/Docker/审批完整链路；父任务仍in_progress。

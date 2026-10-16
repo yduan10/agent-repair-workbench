@@ -31,8 +31,9 @@ export const documentationGroups: readonly DocumentationGroup[] = [
     title: "工程记录",
     description: "开发过程中的计划、规格、交付和评审记录，内容停留在写作当时；当前功能以更新记录为准。",
     entries: [
+      { title: "网页修复操作与常驻服务", slug: "39-p1-01-b3-web-controls", summary: "页面开始/停止、刷新恢复、迁移与本机服务的实现和验收。" },
       { title: "修复运行接口与停止说明", slug: "38-p1-01-b2-delivery", summary: "开始、查询与停止接口的实现记录，断连处理及当前部署限制。" },
-      { title: "修复执行与恢复记录", slug: "37-p1-01-b1b-delivery", summary: "内部执行接续、停止处理与资源恢复的验收记录；网页运行尚未开放。" },
+      { title: "修复执行与恢复记录", slug: "37-p1-01-b1b-delivery", summary: "内部执行接续、停止处理与资源恢复的历史验收记录。" },
       { title: "开发计划与验收台账", slug: "03-roadmap", summary: "任务依赖、状态与验收依据。" },
       { title: "隔离修复交付记录", slug: "31-p0-06-delivery", summary: "候选、回归与真实模型试验的结果。" },
       { title: "隔离候选与回归规格", slug: "26-p0-06-candidate-verification", summary: "候选生成、冻结检查项与判定规则。" },

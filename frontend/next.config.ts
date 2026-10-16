@@ -16,6 +16,9 @@ const config: NextConfig = {
   },
   async rewrites() {
     return [
+      { source: "/api/repair-runs/catalog", destination: `http://127.0.0.1:${apiPort}/api/repair-runs/catalog` },
+      { source: "/api/repair-runs", destination: `http://127.0.0.1:${apiPort}/api/repair-runs` },
+      ...["", "/cancel", "/events"].map(suffix => ({ source: `/api/repair-runs/:id([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})${suffix}`, destination: `http://127.0.0.1:${apiPort}/api/repair-runs/:id${suffix}` })),
       { source: "/api/repairs", destination: `http://127.0.0.1:${apiPort}/api/repairs` },
       { source: "/api/repairs/:id([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})", destination: `http://127.0.0.1:${apiPort}/api/repairs/:id` },
       { source: "/api/repairs/:id([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/candidates/:candidate([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/diff", destination: `http://127.0.0.1:${apiPort}/api/repairs/:id/candidates/:candidate/diff` },

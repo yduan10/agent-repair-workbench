@@ -521,3 +521,6 @@ export const errorLabels: Record<ErrorCode, string> = {
   TOOL_OUTCOME_UNKNOWN: "工具结果未知",
   INTERNAL_ERROR: "内部错误",
 };
+
+// Shared validators for the B3 execution receipt; read-only verdicts remain separate.
+export { task as repairTaskSchema, snapshot as repairSnapshotSchema };

@@ -112,6 +112,19 @@ class RepairService:
             except Exception:
                 return failure("store_unavailable")
 
+    async def events(self, task_id: str) -> Admission:
+        if self.reads.locked():
+            return failure("repair_reads_busy")
+        async with self.reads:
+            try:
+                return Admission(
+                    200, await self.database(lambda store: store.public_events(task_id))
+                )
+            except StoreError as error:
+                return failure(error.code)
+            except Exception:
+                return failure("store_unavailable")
+
     async def catalog(self) -> Admission:
         if self.reads.locked():
             return failure("repair_reads_busy")

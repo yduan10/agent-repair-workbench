@@ -209,7 +209,7 @@ export default function Home() {
             <header className="lp-section-head">
               <h2 id="repair-title">修复</h2>
               <p>修复建议应用到代码的隔离副本后，成为候选。基线和候选在同一组冻结的检查项下逐项对比，候选要消除原错误、同时不破坏正常路径，才算通过。</p>
-              <p>候选在终端用 CLI 生成；网页只读，用来查看代码差异和回归结果。候选不会写回你的代码。目前只支持一个内置案例（返回类型错误）。</p>
+              <p>网页可直接开始和停止修复，也可以在终端使用 CLI。支持返回类型错误、计数值偏移两个内置案例；候选留在隔离副本，不会写回你的代码。</p>
               <div className="lp-command">
                 <code translate="no">{REPAIR_COMMAND}</code>
                 <CopyButton value={REPAIR_COMMAND} label="修复命令" className="btn btn-ghost btn-sm btn-icon" />
